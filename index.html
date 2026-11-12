@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Muzak — Playlist Insights</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  color-scheme: light;
+  --page:#f9f9f7; --surface:#fcfcfb; --card:#ffffff; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+  --grid:#e1e0d9; --axis:#c3c2b7; --ring:rgba(11,11,11,.08); --wash:#f2f1ed; --accent:#2a78d6;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100;
+  --s5:#e87ba4; --s6:#008300; --s7:#6250d6; --so:#b9b8b1;
+  --twin:#1baf7a; --opp:#eb6834;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --page:#0d0d0d; --surface:#1a1a19; --card:#151514; --ink:#f0efec; --ink2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --axis:#383835; --ring:rgba(255,255,255,.08); --wash:#222220; --accent:#3987e5;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500;
+    --s5:#d55181; --s6:#008300; --s7:#9085e9; --so:#5d5c57;
+    --twin:#199e70; --opp:#d95926;
+  }
+}
+* { box-sizing:border-box }
+body { margin:0; background:var(--page); color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",sans-serif; line-height:1.5; -webkit-font-smoothing:antialiased }
+.wrap { max-width:1120px; margin:0 auto; padding:0 20px 80px }
+.hero { padding:56px 0 28px }
+.eyebrow { font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); font-weight:600 }
+h1 { font-size:clamp(34px,5vw,52px); line-height:1.05; margin:10px 0 12px; letter-spacing:-.02em }
+.lede { color:var(--ink2); font-size:17px; max-width:640px; margin:0 }
+.kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin:32px 0 8px }
+.kpi { background:var(--card); border:1px solid var(--ring); border-radius:16px; padding:18px 18px 16px }
+.kpi .v { font-size:30px; font-weight:700; letter-spacing:-.02em; line-height:1.1 }
+.kpi .l { color:var(--muted); font-size:13px; margin-top:4px }
+section { margin-top:56px }
+.sec-head { display:flex; align-items:baseline; gap:14px; margin-bottom:18px; flex-wrap:wrap }
+.sec-num { font-size:13px; font-weight:700; color:var(--accent); font-variant-numeric:tabular-nums }
+h2 { font-size:26px; margin:0; letter-spacing:-.01em }
+.sec-sub { color:var(--muted); font-size:14px; flex-basis:100%; margin-top:-6px }
+.card { background:var(--card); border:1px solid var(--ring); border-radius:20px; padding:24px }
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:16px }
+.grid-62 { display:grid; grid-template-columns:1.25fr 1fr; gap:16px }
+@media (max-width:820px) { .grid2,.grid-62 { grid-template-columns:1fr } }
+h3 { font-size:15px; margin:0 0 14px; font-weight:650 }
+.chartbox { position:relative }
+table { width:100%; border-collapse:collapse; font-size:14px }
+.tablewrap { overflow-x:auto; margin:0 -4px }
+th { text-align:left; font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.06em;
+  padding:0 10px 10px; border-bottom:1px solid var(--grid); white-space:nowrap }
+td { padding:11px 10px; border-bottom:1px solid var(--grid); vertical-align:middle }
+tr:last-child td { border-bottom:0 }
+tbody tr:hover td { background:var(--wash) }
+.num { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap }
+th.num { text-align:right }
+.rank { color:var(--muted); width:28px; font-variant-numeric:tabular-nums }
+.muted { color:var(--muted) } .small { font-size:12.5px } .strong { font-weight:600 }
+td.wcell { white-space:normal; min-width:180px }
+.who { display:flex; align-items:center; gap:10px; font-weight:600; white-space:nowrap }
+.av { display:inline-grid; place-items:center; width:30px; height:30px; border-radius:50%; background:var(--wash);
+  color:var(--ink2); font-size:11.5px; font-weight:700; flex:none; border:1px solid var(--ring) }
+.av.lg { width:42px; height:42px; font-size:14px } .av.sm { width:24px; height:24px; font-size:10px }
+.inbar { display:inline-block; width:90px; height:6px; border-radius:3px; background:var(--wash); margin-right:10px;
+  vertical-align:middle; overflow:hidden }
+.num .n { display:inline-block; min-width:38px; text-align:right }
+.inbar span { display:block; height:100%; background:var(--accent); border-radius:3px }
+.chip { display:inline-flex; align-items:center; gap:7px; font-size:13px; white-space:nowrap }
+.dot { display:inline-block; width:9px; height:9px; border-radius:50%; flex:none }
+.s1{background:var(--s1)} .s2{background:var(--s2)} .s3{background:var(--s3)} .s4{background:var(--s4)}
+.s5{background:var(--s5)} .s6{background:var(--s6)} .s7{background:var(--s7)} .so{background:var(--so)}
+.donut-wrap { position:relative; height:300px }
+.donut-center { position:absolute; inset:0; display:grid; place-items:center; pointer-events:none; text-align:center }
+.donut-center b { display:block; font-size:30px; letter-spacing:-.02em }
+.donut-center span { color:var(--muted); font-size:12.5px }
+.split-row { display:grid; grid-template-columns:minmax(150px,1.3fr) 1fr 52px; align-items:center; gap:12px;
+  padding:7px 0; font-size:14px }
+.split-name { display:flex; align-items:center; gap:8px }
+.split-bar { height:8px; background:var(--wash); border-radius:4px; overflow:hidden }
+.split-bar span { display:block; height:100%; border-radius:4px }
+.tags { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px }
+.tag { font-size:13px; padding:6px 11px; border-radius:999px; background:var(--wash); border:1px solid var(--ring) }
+.tag b { margin-left:8px; color:var(--muted); font-weight:600; font-variant-numeric:tabular-nums }
+.pcards { display:grid; grid-template-columns:repeat(auto-fill,minmax(205px,1fr)); gap:12px; margin-top:16px }
+.pcard { background:var(--card); border:1px solid var(--ring); border-radius:16px; padding:16px }
+.pcard-top { display:flex; gap:12px; align-items:center }
+.pname { font-weight:650; line-height:1.2 }
+.pfav { display:flex; align-items:center; gap:8px; margin:14px 0 10px; padding:9px 11px; border-radius:10px;
+  background:var(--wash); font-size:13.5px }
+.pfav b { margin-left:auto; font-variant-numeric:tabular-nums }
+dl { margin:0; font-size:13px } dl div { display:flex; justify-content:space-between; gap:10px; padding:4px 0 }
+dt { color:var(--muted) } dd { margin:0; text-align:right; font-weight:550; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:60% }
+.pair { display:grid; grid-template-columns:1fr 110px 44px; align-items:center; gap:12px; padding:11px 0;
+  border-bottom:1px solid var(--grid); font-size:14px }
+.pair:last-child { border-bottom:0 }
+.pair-names { display:flex; align-items:center; gap:7px; flex-wrap:wrap; font-weight:550 }
+.amp { color:var(--muted); margin:0 2px }
+.pair-meter { height:8px; border-radius:4px; background:var(--wash); overflow:hidden }
+.pair-meter span { display:block; height:100%; border-radius:4px }
+.pair-meter.twin span { background:var(--twin) } .pair-meter.opp span { background:var(--opp) }
+.pill { display:inline-block; padding:2px 9px; border-radius:999px; background:var(--wash); font-weight:650; font-size:13px }
+.note { color:var(--muted); font-size:13px; margin:12px 0 0 }
+footer { margin-top:64px; color:var(--muted); font-size:12.5px; border-top:1px solid var(--grid); padding-top:18px }
+
+.topnav { display:flex; gap:6px; padding:14px 0 0; font-size:14px }
+.topnav a { padding:7px 14px; border-radius:999px; text-decoration:none; font-weight:600; color:var(--ink2); border:1px solid var(--ring) }
+.topnav a.on { background:var(--ink); color:var(--card); border-color:var(--ink) }
+.hero { padding:34px 0 28px }
+.loading { color:var(--muted); padding:40px 0 }
+</style></head>
+<body><div class="wrap">
+<nav class="topnav"><a class="on" href="index.html">Insights</a><a href="songs.html">All songs</a></nav>
+<header class="hero">
+  <div class="eyebrow">Muzak · WhatsApp music club</div>
+  <h1>Muzak (2024+)<br>Playlist Insights</h1>
+  <p class="lede" id="lede">Loading…</p>
+  <div class="kpis" id="kpis"></div>
+</header>
+
+<section>
+  <div class="sec-head"><span class="sec-num">01</span><h2>Who shares the most</h2>
+  <div class="sec-sub" id="sub1"></div></div>
+  <div class="card"><div class="chartbox" style="height:380px"><canvas id="cSharers"></canvas></div></div>
+  <div class="card" style="margin-top:16px"><div class="tablewrap"><table>
+    <thead><tr><th></th><th>Sharer</th><th class="num">Spotify links</th><th class="num">First to share</th>
+    <th class="num">Share</th><th>Signature genre</th><th>Since</th></tr></thead>
+    <tbody id="tSharers"></tbody></table></div></div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="sec-num">02</span><h2>What the playlist sounds like</h2>
+  <div class="sec-sub" id="sub2"></div></div>
+  <div class="grid-62">
+    <div class="card"><h3>Genre split</h3>
+      <div class="donut-wrap"><canvas id="cDonut"></canvas>
+      <div class="donut-center"><div><b id="donutN"></b><span>tracks with genre data</span></div></div></div>
+    </div>
+    <div class="card"><h3>All genres, % of tracks</h3><div id="split"></div></div>
+  </div>
+  <div class="card" style="margin-top:16px"><h3>Most common detailed genres</h3><div class="tags" id="tags"></div></div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="sec-num">03</span><h2>Everyone's sound</h2>
+  <div class="sec-sub">Genre mix of the tracks each of the top 10 sharers brought in, ordered by links shared</div></div>
+  <div class="card"><div class="chartbox" style="height:440px"><canvas id="cMix"></canvas></div></div>
+  <div class="pcards" id="pcards"></div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="sec-num">04</span><h2>Taste twins &amp; opposites</h2>
+  <div class="sec-sub">How alike two people's genre mix is · 100% = identical taste</div></div>
+  <div class="grid2">
+    <div class="card"><h3>Most alike</h3><div id="twins"></div></div>
+    <div class="card"><h3>Most different</h3><div id="opps"></div></div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="sec-num">05</span><h2>Top artists</h2>
+  <div class="sec-sub">Artists with the most tracks in the playlist</div></div>
+  <div class="card"><div class="tablewrap"><table>
+    <thead><tr><th></th><th>Artist</th><th class="num">Tracks</th><th class="num">Shared by</th><th>Who</th></tr></thead>
+    <tbody id="tArtists"></tbody></table></div></div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="sec-num">06</span><h2>Shared again</h2>
+  <div class="sec-sub">Tracks posted more than once — the group's recurring favourites</div></div>
+  <div class="card"><div class="tablewrap"><table>
+    <thead><tr><th>Track</th><th class="num">Posted</th><th class="num">People</th><th>Posted by (in order)</th></tr></thead>
+    <tbody id="tReshared"></tbody></table></div></div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="sec-num">07</span><h2>When the group shares</h2>
+  <div class="sec-sub">Spotify links per month, weekday and hour (chat export time zone)</div></div>
+  <div class="card"><h3>Links per month</h3><div class="chartbox" style="height:280px"><canvas id="cMonthly"></canvas></div></div>
+  <div class="grid2" style="margin-top:16px">
+    <div class="card"><h3>By weekday</h3><div class="chartbox" style="height:220px"><canvas id="cWeekday"></canvas></div></div>
+    <div class="card"><h3>By hour of day</h3><div class="chartbox" style="height:220px"><canvas id="cHourly"></canvas></div></div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="sec-num">08</span><h2>Fresh finds vs classics</h2>
+  <div class="sec-sub">When the music was released, and how old it was when each person shared it</div></div>
+  <div class="grid2">
+    <div class="card"><h3>Release decade</h3><div class="chartbox" style="height:300px"><canvas id="cDecades"></canvas></div></div>
+    <div class="card"><h3>Median age of tracks when shared</h3><div class="chartbox" style="height:300px"><canvas id="cFresh"></canvas></div></div>
+  </div>
+  <div class="card" style="margin-top:16px"><div class="tablewrap"><table>
+    <thead><tr><th>Sharer</th><th class="num">Median age when shared</th><th class="num">Released within a year</th>
+    <th class="num">Tracks</th></tr></thead><tbody id="tFresh"></tbody></table></div></div>
+</section>
+
+<footer id="foot">Each track is credited to the first person who posted it.
+Genres come from Spotify artist data, with Last.fm tags where Spotify had none.</footer>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmtInt = n => Math.round(n).toLocaleString("en-GB");
+const fmtDate = d => d ? new Date(d.slice(0, 10) + "T12:00:00").toLocaleDateString("en-GB", {day: "numeric", month: "short", year: "numeric"}) : "";
+const fmtMon = d => new Date(d.slice(0, 7) + "-15T12:00:00").toLocaleDateString("en-GB", {month: "short", year: "numeric"});
+const initials = n => (n.split(/[\s.]+/).filter(p => p && /[\p{L}\p{N}]/u.test(p[0])).slice(0, 2).map(p => p[0]).join("") || "?").toUpperCase();
+const countBy = (arr, key) => { const m = new Map(); arr.forEach(x => [].concat(key(x)).forEach(k => k != null && k !== "" && m.set(k, (m.get(k) || 0) + 1))); return m; };
+const sortDesc = m => [...m].sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0])));
+const median = a => { if (!a.length) return null; const s = [...a].sort((x, y) => x - y), h = s.length >> 1; return s.length % 2 ? s[h] : (s[h - 1] + s[h]) / 2; };
+const TOP_N = 10, OTHER = "Other genres";
+
+function render(D) {
+  const songs = D.songs, posts = D.posts.map(([at, by, id]) => ({at, by, id}));
+  const known = songs.filter(s => s.c !== "Unknown");
+  const catCounts = sortDesc(countBy(known, s => s.c));
+  const named = catCounts.slice(0, 7).map(c => c[0]);
+  const slotOf = c => named.indexOf(c);
+  const fold = c => named.includes(c) ? c : OTHER;
+  const dotCls = c => slotOf(c) >= 0 ? "s" + (slotOf(c) + 1) : "so";
+  const chip = c => `<span class="chip"><i class="dot ${dotCls(c)}"></i>${esc(c)}</span>`;
+  const senderPosts = sortDesc(countBy(posts, p => p.by));
+  const top = senderPosts.slice(0, TOP_N).map(s => s[0]);
+  const byId = new Map(songs.map(s => [s.id, s]));
+  const postsById = new Map(); posts.forEach(p => { if (!postsById.has(p.id)) postsById.set(p.id, []); postsById.get(p.id).push(p); });
+  const reshared = [...postsById].filter(([, ps]) => ps.length > 1);
+  const firstPost = s => posts.find(p => p.by === s);
+  const since = posts.map(p => p.at).filter(Boolean).sort()[0] || "";
+
+  // ---------- header ----------
+  $("lede").textContent = `Every Spotify track shared in the group since ${since ? fmtMon(since) : "the start"}, who brought it, and what it sounds like. Updated ${fmtDate(D.updated)}.`;
+  const hours = songs.reduce((a, s) => a + (s.d || 0), 0) / 3600;
+  const topCat = catCounts[0] || ["—", 0];
+  const kpi = (v, l) => `<div class="kpi"><div class="v">${v}</div><div class="l">${esc(l)}</div></div>`;
+  $("kpis").innerHTML = kpi(fmtInt(songs.length), "tracks in the playlist") + kpi(fmtInt(hours) + " h", "of listening") +
+    kpi(senderPosts.length, "people sharing on Spotify") +
+    kpi(Math.round(topCat[1] / Math.max(known.length, 1) * 100) + "%", `${topCat[0]} — top genre`) +
+    kpi(reshared.length, "tracks shared more than once");
+
+  // ---------- 01 sharers ----------
+  const firstShared = countBy(songs.filter(s => s.how === "posted"), s => s.by);
+  const others = senderPosts.slice(TOP_N).reduce((a, s) => a + s[1], 0);
+  $("sub1").textContent = `Spotify track links posted in the chat · top ${TOP_N} of ${senderPosts.length} sharers (${fmtInt(others)} links from everyone else)`;
+  const maxP = senderPosts[0] ? senderPosts[0][1] : 1;
+  $("tSharers").innerHTML = senderPosts.slice(0, TOP_N).map(([s, n], i) => {
+    const sig = sortDesc(countBy(known.filter(x => x.by === s), x => x.c))[0];
+    return `<tr><td class="rank">${i + 1}</td><td><div class="who"><span class="av">${esc(initials(s))}</span>${esc(s)}</div></td>
+      <td class="num"><div class="inbar"><span style="width:${(n / maxP * 100).toFixed(0)}%"></span></div><span class="n">${fmtInt(n)}</span></td>
+      <td class="num">${fmtInt(firstShared.get(s) || 0)}</td><td class="num">${(n / posts.length * 100).toFixed(1)}%</td>
+      <td>${sig ? chip(sig[0]) : "—"}</td><td class="muted">${fmtMon(firstPost(s).at || since)}</td></tr>`;
+  }).join("");
+
+  // ---------- 02 genre split ----------
+  $("sub2").textContent = `Genre of each track, from its artists' Spotify / Last.fm tags · ${Math.round((songs.length - known.length) / Math.max(songs.length, 1) * 100)}% of tracks had no genre data and are excluded`;
+  const donutLabels = named.concat(catCounts.length > named.length ? [OTHER] : []);
+  const donutValues = named.map(c => catCounts.find(x => x[0] === c)[1])
+    .concat(catCounts.length > named.length ? [catCounts.slice(7).reduce((a, c) => a + c[1], 0)] : []);
+  $("donutN").textContent = fmtInt(known.length);
+  const maxPct = catCounts.length ? catCounts[0][1] : 1;
+  $("split").innerHTML = catCounts.map(([c, n]) => `<div class="split-row"><span class="split-name"><i class="dot ${dotCls(c)}"></i>${esc(c)}</span>
+    <span class="split-bar"><span class="${dotCls(c)}" style="width:${(n / maxPct * 100).toFixed(0)}%"></span></span>
+    <span class="num">${(n / known.length * 100).toFixed(1)}%</span></div>`).join("");
+  $("tags").innerHTML = sortDesc(countBy(songs, s => s.g)).slice(0, 12)
+    .map(([g, n]) => `<a class="tag" style="text-decoration:none;color:inherit" href="songs.html#g=${encodeURIComponent(g)}">${esc(g)}<b>${n}</b></a>`).join("");
+
+  // ---------- 03 genre mix + profiles ----------
+  const mixLabels = named.concat([OTHER]);
+  const mix = Object.fromEntries(mixLabels.map(l => [l, []]));
+  const profiles = top.map(s => {
+    const mine = songs.filter(x => x.by === s), mk = mine.filter(x => x.c !== "Unknown");
+    const vc = countBy(mk, x => fold(x.c));
+    mixLabels.forEach(l => mix[l].push(mk.length ? +((vc.get(l) || 0) / mk.length * 100).toFixed(1) : 0));
+    const cats = sortDesc(countBy(mk, x => x.c));
+    const div = -cats.reduce((a, [, n]) => { const p = n / mk.length; return a + p * Math.log2(p); }, 0);
+    const years = mine.map(x => x.y).filter(Boolean);
+    return {s, n: mine.length, cat: cats[0] ? cats[0][0] : "—", pct: cats[0] ? Math.round(cats[0][1] / mk.length * 100) : 0,
+            distinct: cats.length, div, artist: (sortDesc(countBy(mine, x => x.primary))[0] || ["—"])[0], year: median(years)};
+  });
+  const medDiv = median(profiles.map(p => p.div)) ?? 0;
+  $("pcards").innerHTML = profiles.map(p => `<div class="pcard"><div class="pcard-top"><span class="av lg">${esc(initials(p.s))}</span>
+    <div><div class="pname">${esc(p.s)}</div><div class="muted small">${p.n} tracks · ${p.div >= medDiv ? "Explorer" : "Specialist"}</div></div></div>
+    <div class="pfav"><span class="dot ${dotCls(p.cat)}"></span><span>${esc(p.cat)}</span><b>${p.pct}%</b></div>
+    <dl><div><dt>Go-to artist</dt><dd>${esc(p.artist)}</dd></div><div><dt>Genres spanned</dt><dd>${p.distinct}</dd></div>
+    <div><dt>Median release</dt><dd>${p.year ? Math.round(p.year) : "—"}</dd></div></dl>
+    <a class="small" style="color:var(--accent);text-decoration:none;font-weight:600" href="songs.html#by=${encodeURIComponent(p.s)}">See their songs →</a></div>`).join("");
+
+  // ---------- 04 taste twins ----------
+  const allCats = catCounts.map(c => c[0]);
+  const vec = Object.fromEntries(top.map(s => { const m = countBy(known.filter(x => x.by === s), x => x.c); return [s, allCats.map(c => m.get(c) || 0)]; })
+    .filter(([, v]) => v.reduce((a, b) => a + b, 0) >= 5));
+  const names = Object.keys(vec), pairs = [];
+  names.forEach((a, i) => names.slice(i + 1).forEach(b => {
+    const va = vec[a], vb = vec[b], dot = va.reduce((t, x, k) => t + x * vb[k], 0);
+    const na = Math.hypot(...va), nb = Math.hypot(...vb);
+    if (na && nb) pairs.push([a, b, Math.round(dot / (na * nb) * 100)]);
+  }));
+  pairs.sort((x, y) => y[2] - x[2]);
+  const pairRows = (list, kind) => list.length ? list.map(([a, b, v]) => `<div class="pair"><div class="pair-names"><span class="av sm">${esc(initials(a))}</span>${esc(a)}
+    <span class="amp">&amp;</span><span class="av sm">${esc(initials(b))}</span>${esc(b)}</div>
+    <div class="pair-meter ${kind}"><span style="width:${v}%"></span></div><b class="num">${v}%</b></div>`).join("") : `<p class="muted">Not enough data yet.</p>`;
+  $("twins").innerHTML = pairRows(pairs.slice(0, 5), "twin");
+  $("opps").innerHTML = pairRows(pairs.length > 5 ? pairs.slice(-5).reverse() : [], "opp");
+
+  // ---------- 05 artists ----------
+  const art = new Map();
+  songs.forEach(s => s.a.forEach(a => { if (!art.has(a)) art.set(a, {n: 0, by: new Set()}); const r = art.get(a); r.n++; if (s.how === "posted") r.by.add(s.by); }));
+  const arts = [...art].sort((x, y) => y[1].n - x[1].n || y[1].by.size - x[1].by.size).slice(0, 15);
+  const maxA = arts[0] ? arts[0][1].n : 1;
+  $("tArtists").innerHTML = arts.map(([a, r], i) => `<tr><td class="rank">${i + 1}</td>
+    <td class="strong"><a style="color:inherit;text-decoration:none" href="songs.html#a=${encodeURIComponent(a)}">${esc(a)}</a></td>
+    <td class="num"><div class="inbar"><span style="width:${(r.n / maxA * 100).toFixed(0)}%"></span></div><span class="n">${r.n}</span></td>
+    <td class="num">${r.by.size}</td><td class="muted wcell">${esc([...r.by].sort().join(", "))}</td></tr>`).join("");
+
+  // ---------- 06 re-shared ----------
+  const rs = reshared.map(([id, ps]) => ({s: byId.get(id) || songs.find(x => x.id === id), ps}))
+    .sort((a, b) => b.ps.length - a.ps.length || new Set(b.ps.map(p => p.by)).size - new Set(a.ps.map(p => p.by)).size).slice(0, 15);
+  $("tReshared").innerHTML = rs.length ? rs.map(({s, ps}) => `<tr><td><div class="strong">${esc(s ? s.t : "(not in playlist)")}</div>
+    <div class="muted small">${esc(s ? s.a.join(", ") : "")}</div></td><td class="num"><span class="pill">×${ps.length}</span></td>
+    <td class="num">${new Set(ps.map(p => p.by)).size}</td><td class="muted wcell">${esc(ps.map(p => p.by).join(" → "))}</td></tr>`).join("")
+    : `<tr><td colspan="4" class="muted">No re-shared tracks yet.</td></tr>`;
+
+  // ---------- 08 fresh vs classic table ----------
+  const fresh = top.map(s => {
+    const ages = songs.filter(x => x.by === s && x.y && x.at).map(x => +x.at.slice(0, 4) - x.y);
+    return {s, med: median(ages), newPct: ages.length ? Math.round(ages.filter(a => a <= 1).length / ages.length * 100) : 0, n: ages.length};
+  }).filter(f => f.n).sort((a, b) => a.med - b.med);
+  $("tFresh").innerHTML = fresh.map(f => `<tr><td>${esc(f.s)}</td><td class="num">${f.med.toFixed(0)} yrs</td>
+    <td class="num">${f.newPct}%</td><td class="num muted">${f.n}</td></tr>`).join("");
+
+  // ---------- charts (tables above still show if the chart library can't load) ----------
+  if (!window.Chart) return;
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const SLOTS = [1,2,3,4,5,6,7].map(i => css("--s" + i));
+  const OTHERC = css("--so"), INK2 = css("--ink2"), MUTED = css("--muted"), GRID = css("--grid"),
+        AXIS = css("--axis"), CARD = css("--card"), ACCENT = css("--accent");
+  const colorFor = l => { const i = named.indexOf(l); return i >= 0 ? SLOTS[i] : OTHERC; };
+  Chart.defaults.font.family = 'system-ui,-apple-system,"Segoe UI",sans-serif';
+  Chart.defaults.font.size = 12; Chart.defaults.color = MUTED;
+  Object.assign(Chart.defaults.plugins.legend.labels, {usePointStyle: true, pointStyle: "circle", boxWidth: 8, color: INK2});
+  Object.assign(Chart.defaults.plugins.tooltip, {backgroundColor: css("--ink"), titleColor: CARD, bodyColor: CARD,
+    padding: 10, cornerRadius: 8, boxPadding: 4, usePointStyle: true});
+  const sx = (e = {}) => Object.assign({grid: {display: false}, border: {color: AXIS}, ticks: {color: MUTED}}, e);
+  const sy = (e = {}) => Object.assign({grid: {color: GRID}, border: {display: false}, ticks: {color: MUTED, padding: 6}, beginAtZero: true}, e);
+  const bar = {borderRadius: 4, borderSkipped: "start", maxBarThickness: 26};
+  const names10 = senderPosts.slice(0, TOP_N);
+  new Chart($("cSharers"), {type: "bar", data: {labels: names10.map(r => r[0]), datasets: [
+      {label: "Spotify links posted", data: names10.map(r => r[1]), backgroundColor: SLOTS[0], ...bar},
+      {label: "Tracks they were first to share", data: names10.map(r => firstShared.get(r[0]) || 0), backgroundColor: css("--s3"), ...bar}]},
+    options: {indexAxis: "y", responsive: true, maintainAspectRatio: false, plugins: {legend: {position: "top", align: "end"}},
+      scales: {x: sy(), y: sx({ticks: {color: INK2, font: {weight: 600}}})}}});
+  new Chart($("cDonut"), {type: "doughnut", data: {labels: donutLabels, datasets: [{data: donutValues,
+      backgroundColor: donutLabels.map(colorFor), borderColor: CARD, borderWidth: 2, hoverOffset: 6}]},
+    options: {responsive: true, maintainAspectRatio: false, cutout: "68%", plugins: {legend: {position: "bottom"},
+      tooltip: {callbacks: {label: c => { const t = c.dataset.data.reduce((a, b) => a + b, 0); return ` ${c.label}: ${c.raw} tracks (${(c.raw / t * 100).toFixed(1)}%)`; }}}}}});
+  new Chart($("cMix"), {type: "bar", data: {labels: top, datasets: mixLabels.map(l => ({label: l, data: mix[l],
+      backgroundColor: colorFor(l), borderColor: CARD, borderWidth: {left: 0, right: 2, top: 0, bottom: 0}, borderSkipped: false, maxBarThickness: 28}))},
+    options: {indexAxis: "y", responsive: true, maintainAspectRatio: false,
+      plugins: {legend: {position: "top", align: "start"}, tooltip: {callbacks: {label: c => ` ${c.dataset.label}: ${c.raw}%`}}},
+      scales: {x: sy({stacked: true, max: 100, ticks: {color: MUTED, callback: v => v + "%"}}), y: sx({stacked: true, ticks: {color: INK2, font: {weight: 600}}})}}});
+  // activity
+  const dated = posts.filter(p => p.at);
+  const months = []; if (dated.length) { const ats = dated.map(p => p.at).sort();
+    let [y, mo] = ats[0].slice(0, 7).split("-").map(Number); const [ey, em] = ats[ats.length - 1].slice(0, 7).split("-").map(Number);
+    while (y < ey || (y === ey && mo <= em)) { months.push(`${y}-${String(mo).padStart(2, "0")}`); if (++mo > 12) { mo = 1; y++; } } }
+  const mCount = countBy(dated, p => p.at.slice(0, 7));
+  new Chart($("cMonthly"), {type: "line", data: {labels: months.map(fmtMon), datasets: [{label: "Spotify links", data: months.map(m => mCount.get(m) || 0),
+      borderColor: ACCENT, backgroundColor: ACCENT + "1f", fill: true, borderWidth: 2, tension: .35, pointRadius: 0, pointHoverRadius: 5}]},
+    options: {responsive: true, maintainAspectRatio: false, interaction: {mode: "index", intersect: false}, plugins: {legend: {display: false}},
+      scales: {x: sx({ticks: {color: MUTED, maxTicksLimit: 12}}), y: sy()}}});
+  const small = (el, labels, data) => new Chart($(el), {type: "bar", data: {labels, datasets: [{label: "Spotify links", data, backgroundColor: ACCENT, ...bar}]},
+    options: {responsive: true, maintainAspectRatio: false, plugins: {legend: {display: false}}, scales: {x: sx(), y: sy()}}});
+  const wd = countBy(dated, p => (new Date(p.at).getDay() + 6) % 7), hr = countBy(dated, p => +p.at.slice(11, 13));
+  small("cWeekday", ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"], [0,1,2,3,4,5,6].map(i => wd.get(i) || 0));
+  small("cHourly", [...Array(24).keys()].map(h => String(h).padStart(2, "0")), [...Array(24).keys()].map(h => hr.get(h) || 0));
+  const dec = sortDesc(countBy(songs.filter(s => s.y), s => Math.floor(s.y / 10) * 10 + "s")).sort((a, b) => a[0].localeCompare(b[0]));
+  small("cDecades", dec.map(d => d[0]), dec.map(d => d[1]));
+  new Chart($("cFresh"), {type: "bar", data: {labels: fresh.map(f => f.s), datasets: [{label: "Median years old when shared",
+      data: fresh.map(f => f.med), backgroundColor: ACCENT, ...bar}]},
+    options: {indexAxis: "y", responsive: true, maintainAspectRatio: false, plugins: {legend: {display: false},
+      tooltip: {callbacks: {label: c => ` ${c.raw} yrs median · ${fresh[c.dataIndex].newPct}% released within a year`}}},
+      scales: {x: sy({ticks: {color: MUTED, callback: v => v + " yrs"}}), y: sx({ticks: {color: INK2, font: {weight: 600}}})}}});
+}
+
+fetch("data.json", {cache: "no-cache"}).then(r => r.json())
+  .catch(e => { $("lede").textContent = "Couldn't load the data. Please refresh the page."; throw e; })
+  .then(render);
+</script>
+</body></html>

@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Muzak — All Songs</title>
+<style>
+:root{color-scheme:light;--page:#f9f9f7;--card:#fff;--ink:#0b0b0b;--ink2:#52514e;--muted:#898781;--grid:#e1e0d9;
+ --ring:rgba(11,11,11,.08);--wash:#f2f1ed;--accent:#2a78d6;--spot:#1a9e52;
+ --s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#eda100;--s5:#e87ba4;--s6:#008300;--s7:#6250d6;--so:#b9b8b1}
+@media (prefers-color-scheme:dark){:root{color-scheme:dark;--page:#0d0d0d;--card:#151514;--ink:#f0efec;--ink2:#c3c2b7;
+ --muted:#898781;--grid:#2c2c2a;--ring:rgba(255,255,255,.09);--wash:#222220;--accent:#3987e5;--spot:#2fbf6a;
+ --s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--s5:#d55181;--s6:#008300;--s7:#9085e9;--so:#5d5c57}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+ line-height:1.45;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:0 16px 80px}
+.topnav{display:flex;gap:6px;padding:14px 0 0;font-size:14px}
+.topnav a{padding:7px 14px;border-radius:999px;text-decoration:none;font-weight:600;color:var(--ink2);border:1px solid var(--ring)}
+.topnav a.on{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.hero{padding:34px 0 18px}
+.eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600}
+h1{font-size:clamp(30px,5vw,46px);line-height:1.05;margin:8px 0 10px;letter-spacing:-.02em}
+.lede{color:var(--ink2);margin:0;max-width:620px}
+.bar{position:sticky;top:0;z-index:5;background:var(--page);padding:12px 0 10px;border-bottom:1px solid var(--grid)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.search{flex:1 1 260px;display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--ring);
+ border-radius:12px;padding:0 12px;height:42px}
+.search input{border:0;outline:0;background:transparent;color:var(--ink);font-size:15px;width:100%;height:100%}
+select,.btn{height:42px;border-radius:12px;border:1px solid var(--ring);background:var(--card);color:var(--ink);
+ font-size:14px;padding:0 12px;font-family:inherit}
+select{max-width:100%;cursor:pointer}
+.btn{cursor:pointer;font-weight:600;white-space:nowrap}
+.btn.primary{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.panel{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-top:10px}
+.panel[hidden]{display:none}
+.panel label{min-width:0}
+.panel select,.panel input{width:100%;min-width:0}
+.panel label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);font-weight:600;
+ text-transform:uppercase;letter-spacing:.05em}
+.panel input{height:42px;border-radius:12px;border:1px solid var(--ring);background:var(--card);color:var(--ink);
+ font-size:14px;padding:0 12px;font-family:inherit}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:10px 0 2px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 12px;border-radius:999px;
+ border:1px solid var(--ring);background:var(--card);color:var(--ink2);font-size:13px;font-weight:550;cursor:pointer;
+ font-family:inherit}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.dot{width:9px;height:9px;border-radius:50%;flex:none;display:inline-block}
+.s0{background:var(--s1)}.s1{background:var(--s2)}.s2{background:var(--s3)}.s3{background:var(--s4)}
+.s4{background:var(--s5)}.s5{background:var(--s6)}.s6{background:var(--s7)}.so{background:var(--so)}
+.status{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px;font-size:13.5px;color:var(--muted);flex-wrap:wrap}
+.active{display:flex;gap:6px;flex-wrap:wrap}
+.tag{display:inline-flex;align-items:center;gap:6px;background:var(--wash);border:1px solid var(--ring);border-radius:999px;
+ padding:3px 6px 3px 11px;color:var(--ink);font-size:12.5px}
+.tag button{border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:15px;line-height:1;padding:0 4px}
+.month{position:sticky;top:var(--bar-h,150px);z-index:2;background:var(--page);margin:26px 0 10px;padding:4px 0;
+ font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;display:flex;gap:10px}
+.month span{color:var(--ink2);font-weight:600;letter-spacing:0;text-transform:none}
+.list{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+.song{display:grid;grid-template-columns:72px 1fr auto;gap:14px;background:var(--card);border:1px solid var(--ring);
+ border-radius:16px;padding:12px;align-items:start}
+.art{width:72px;height:72px;border-radius:10px;background:var(--wash);object-fit:cover;display:block}
+.title{font-weight:680;font-size:16px;line-height:1.25;margin:2px 0 2px}
+.e{display:inline-block;font-size:10px;font-weight:700;background:var(--wash);color:var(--muted);border-radius:4px;
+ padding:1px 5px;margin-left:6px;vertical-align:2px}
+.link{background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer;text-align:left}
+.link:hover{text-decoration:underline}
+.artists{color:var(--ink2);font-size:14.5px}
+.meta{color:var(--muted);font-size:13px;margin-top:3px}
+.g{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.gc{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:3px 9px;border-radius:999px;
+ background:var(--wash);border:1px solid var(--ring);color:var(--ink2);cursor:pointer;font-family:inherit}
+.gc.broad{color:var(--ink);font-weight:600}
+.by{display:flex;flex-direction:column;align-items:flex-end;text-align:right;font-size:13px;color:var(--muted);white-space:nowrap}
+.by b{display:block;color:var(--ink);font-size:14px;font-weight:650;margin-bottom:1px}
+.play{display:inline-flex;align-items:center;gap:6px;margin-top:10px;height:30px;padding:0 12px;border-radius:999px;
+ background:var(--spot);color:#fff;text-decoration:none;font-size:12.5px;font-weight:650}
+details{grid-column:2/4;margin-top:-2px}
+summary{cursor:pointer;color:var(--accent);font-size:13px;font-weight:600;list-style:none}
+summary::-webkit-details-marker{display:none}
+.notes{font-size:13.5px;color:var(--ink2);margin-top:8px;display:grid;gap:10px}
+.notes h4{margin:0 0 2px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.notes p{margin:0}
+.src{font-size:11.5px;color:var(--muted)}
+.src a{color:var(--muted)}
+.empty{text-align:center;color:var(--muted);padding:60px 0}
+.more{display:block;margin:20px auto 0}
+footer{margin-top:50px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--grid);padding-top:16px}
+@media (max-width:640px){
+ .row select{flex:1 1 auto;min-width:0}
+ .song{grid-template-columns:60px 1fr;gap:12px}.art{width:60px;height:60px}
+ .by{grid-column:1/3;text-align:left;flex-direction:row;gap:6px;align-items:baseline;white-space:normal;flex-wrap:wrap}
+ .by b{display:inline;margin:0}.play{margin:0 0 0 auto}
+ details{grid-column:1/3}
+ .panel{grid-template-columns:1fr 1fr}
+}
+</style></head>
+<body><div class="wrap">
+<nav class="topnav"><a href="index.html">Insights</a><a class="on" href="songs.html">All songs</a></nav>
+<header class="hero">
+  <div class="eyebrow">Muzak · WhatsApp music club</div>
+  <h1>Every song shared</h1>
+  <p class="lede" id="lede">Loading songs…</p>
+</header>
+
+<div class="bar" id="bar">
+  <div class="row">
+    <div class="search"><span aria-hidden="true">⌕</span>
+      <input id="q" type="search" placeholder="Search songs, artists, albums…" autocomplete="off"></div>
+    <select id="sort" aria-label="Sort">
+      <option value="new">Newest posted</option><option value="old">Oldest posted</option>
+      <option value="song">Song A–Z</option><option value="artist">Artist A–Z</option>
+      <option value="relnew">Newest release</option><option value="relold">Oldest release</option>
+    </select>
+    <button class="btn" id="toggle" aria-expanded="false">Filters</button>
+  </div>
+  <div class="panel" id="panel" hidden>
+    <label>Posted by<select id="by"></select></label>
+    <label>Detailed genre<select id="g"></select></label>
+    <label>Artist<input id="a" list="artists" placeholder="Any artist"></label>
+    <label>When<select id="rec">
+      <option value="all">Any time</option><option value="7">Last 7 days</option><option value="30">Last month</option>
+      <option value="91">Last 3 months</option><option value="182">Last 6 months</option><option value="365">Last year</option>
+    </select></label>
+  </div>
+  <datalist id="artists"></datalist>
+  <div class="chips" id="cats" role="group" aria-label="Genre group"></div>
+  <div class="status"><span id="count"></span><div class="active" id="active"></div></div>
+</div>
+
+<div id="out"></div>
+<footer>Each song is credited to the first person who posted it. Genres come from
+the artist's Spotify / Last.fm tags. Song and artist notes from <a href="https://www.last.fm" style="color:inherit">Last.fm</a>
+(CC BY-SA).</footer>
+</div>
+
+<script>
+let DATA, SONGS;
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmtDate = d => d ? new Date(d + "T12:00:00").toLocaleDateString("en-GB", {day:"numeric", month:"short", year:"numeric"}) : "";
+const fmtMonth = d => d ? new Date(d + "T12:00:00").toLocaleDateString("en-GB", {month:"long", year:"numeric"}) : "Date unknown";
+const fmtN = n => n >= 1e6 ? (n/1e6).toFixed(1).replace(/\.0$/,"") + "M" : n >= 1e3 ? Math.round(n/1e3) + "K" : String(n);
+const slot = s => s.cs >= 0 ? "s" + s.cs : "so";
+const dur = s => s.d ? `${Math.floor(s.d / 60)}:${String(s.d % 60).padStart(2, "0")}` : "";
+const day = s => (s.at || "").slice(0, 10);
+const STATE_KEYS = ["q","sort","by","g","a","rec","c"];
+let st = {q:"", sort:"new", by:"", g:"", a:"", rec:"all", c:""};
+let limit = 150;
+
+// ---------- state <-> URL ----------
+function readHash() {
+  const p = new URLSearchParams(location.hash.slice(1));
+  st = {q:"", sort:"new", by:"", g:"", a:"", rec:"all", c:""};
+  STATE_KEYS.forEach(k => { if (p.has(k)) st[k] = p.get(k); });
+}
+function writeHash() {
+  const p = new URLSearchParams();
+  STATE_KEYS.forEach(k => { const d = {sort:"new", rec:"all"}[k] ?? ""; if (st[k] && st[k] !== d) p.set(k, st[k]); });
+  history.replaceState(null, "", p.toString() ? "#" + p : location.pathname);
+}
+function syncControls() {
+  ["q","sort","by","g","a","rec"].forEach(k => { if ($(k).value !== st[k]) $(k).value = st[k]; });
+  document.querySelectorAll("#cats .chip").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.c === st.c)));
+}
+
+// ---------- filtering ----------
+function matches(s) {
+  if (st.by && s.by !== st.by) return false;
+  if (st.c && s.c !== st.c) return false;
+  if (st.g && !s.g.includes(st.g)) return false;
+  if (st.a && !s.a.some(a => a.toLowerCase() === st.a.toLowerCase())) return false;
+  if (st.rec !== "all") {
+    if (!s.at) return false;
+    const days = (Date.now() - new Date(day(s) + "T12:00:00")) / 864e5;
+    if (days > +st.rec) return false;
+  }
+  if (st.q) {
+    const hay = (s.t + " " + s.a.join(" ") + " " + s.al + " " + s.g.join(" ") + " " + s.by).toLowerCase();
+    if (!st.q.toLowerCase().split(/\s+/).every(w => hay.includes(w))) return false;
+  }
+  return true;
+}
+const SORTS = {
+  new: (a,b) => (b.at||"").localeCompare(a.at||""),
+  old: (a,b) => (a.at||"9").localeCompare(b.at||"9"),
+  song: (a,b) => a.t.localeCompare(b.t),
+  artist: (a,b) => a.a[0].localeCompare(b.a[0]) || a.t.localeCompare(b.t),
+  relnew: (a,b) => (b.y||0) - (a.y||0),
+  relold: (a,b) => (a.y||9999) - (b.y||9999),
+};
+
+// ---------- rendering ----------
+function card(s) {
+  const artists = s.a.map(a => `<button class="link" data-a="${esc(a)}">${esc(a)}</button>`).join(", ");
+  const meta = [s.al && esc(s.al), s.y, dur(s)].filter(Boolean).join(" · ");
+  const genres = `<button class="gc broad" data-c="${esc(s.c)}"><i class="dot ${slot(s)}"></i>${esc(s.c)}</button>` +
+    s.g.slice(0,4).map(g => `<button class="gc" data-g="${esc(g)}">${esc(g)}</button>`).join("");
+  const who = s.how === "posted"
+    ? `<b><button class="link" data-by="${esc(s.by)}">${esc(s.by)}</button></b>${fmtDate(day(s))}`
+    : `<b>${esc(s.by)}</b>${fmtDate(day(s))}`;
+  const also = s.also.length ? `<div>also shared by ${s.also.map(esc).join(", ")}</div>` : "";
+  const notes = [];
+  if (s.wiki) notes.push(`<div><h4>About the song</h4><p>${esc(s.wiki)}</p></div>`);
+  if (s.bio) notes.push(`<div><h4>About ${esc(s.primary)}</h4><p>${esc(s.bio)}</p></div>`);
+  const facts = [s.lis ? `${fmtN(s.lis)} listeners on Last.fm` : "", s.al_l ? `${esc(s.primary)}: ${fmtN(s.al_l)} listeners` : "",
+                 s.n > 1 ? `posted ${s.n} times in the chat` : ""].filter(Boolean).join(" · ");
+  if (facts) notes.push(`<div class="src">${facts}${s.bioUrl ? ` · <a href="${esc(s.bioUrl)}" target="_blank" rel="noopener">More on Last.fm</a>` : ""}</div>`);
+  return `<article class="song">
+    ${s.img ? `<img class="art" src="${esc(s.img)}" alt="" loading="lazy" width="72" height="72">` : `<div class="art"></div>`}
+    <div>
+      <div class="title">${esc(s.t)}${s.x ? `<span class="e" title="Explicit">E</span>` : ""}</div>
+      <div class="artists">${artists}</div>
+      ${meta ? `<div class="meta">${meta}</div>` : ""}
+      <div class="g">${genres}</div>
+    </div>
+    <div class="by">${who}${also}
+      <a class="play" href="https://open.spotify.com/track/${esc(s.id)}" target="_blank" rel="noopener">▶ Spotify</a></div>
+    ${notes.length ? `<details><summary>Song &amp; artist notes</summary><div class="notes">${notes.join("")}</div></details>` : ""}
+  </article>`;
+}
+
+function render() {
+  const list = SONGS.filter(matches).sort(SORTS[st.sort] || SORTS.new);
+  $("count").textContent = `${list.length.toLocaleString()} of ${SONGS.length.toLocaleString()} songs`;
+  const tags = [];
+  if (st.q) tags.push(["q", `“${st.q}”`]);
+  if (st.c) tags.push(["c", st.c]);
+  if (st.g) tags.push(["g", st.g]);
+  if (st.a) tags.push(["a", st.a]);
+  if (st.by) tags.push(["by", "Posted by " + st.by]);
+  if (st.rec !== "all") tags.push(["rec", $("rec").selectedOptions[0].textContent]);
+  $("active").innerHTML = tags.map(([k,l]) => `<span class="tag">${esc(l)}<button data-clear="${k}" aria-label="Remove">×</button></span>`).join("") +
+    (tags.length > 1 ? `<button class="tag" data-clear="all" style="cursor:pointer">Clear all</button>` : "");
+  if (!list.length) { $("out").innerHTML = `<div class="empty">No songs match these filters.</div>`; return; }
+  const shown = list.slice(0, limit);
+  const byDate = st.sort === "new" || st.sort === "old";
+  let html = byDate ? "" : `<div class="list">`, month = null;
+  const monthCount = byDate ? list.reduce((m,s)=>{const k=(s.at||"").slice(0,7); m[k]=(m[k]||0)+1; return m;}, {}) : {};
+  for (const s of shown) {
+    if (byDate) {
+      const k = (s.at||"").slice(0,7);
+      if (k !== month) {
+        if (month !== null) html += `</div>`;
+        html += `<div class="month">${esc(fmtMonth(k && k + "-15"))}<span>${monthCount[k]} songs</span></div><div class="list">`;
+        month = k;
+      }
+    }
+    html += card(s);
+  }
+  html += `</div>`;
+  if (list.length > limit) html += `<button class="btn primary more" id="more">Show more (${(list.length - limit).toLocaleString()} left)</button>`;
+  $("out").innerHTML = html;
+  document.documentElement.style.setProperty("--bar-h", $("bar").offsetHeight + "px");
+}
+
+function update(changes, scroll) {
+  Object.assign(st, changes); limit = 150;
+  syncControls(); writeHash(); render();
+  if (scroll) window.scrollTo({top: $("bar").offsetTop, behavior: "smooth"});
+}
+
+// ---------- events ----------
+let t; $("q").addEventListener("input", e => { clearTimeout(t); t = setTimeout(() => update({q: e.target.value.trim()}), 150); });
+["sort","by","g","rec"].forEach(k => $(k).addEventListener("change", e => update({[k]: e.target.value})));
+$("a").addEventListener("change", e => update({a: e.target.value.trim()}));
+$("toggle").addEventListener("click", () => {
+  const p = $("panel"); p.hidden = !p.hidden; $("toggle").setAttribute("aria-expanded", String(!p.hidden));
+  document.documentElement.style.setProperty("--bar-h", $("bar").offsetHeight + "px");
+});
+$("cats").addEventListener("click", e => { const b = e.target.closest(".chip"); if (b) update({c: b.dataset.c}); });
+$("active").addEventListener("click", e => {
+  const k = e.target.closest("[data-clear]")?.dataset.clear; if (!k) return;
+  if (k === "all") update({q:"", by:"", g:"", a:"", rec:"all", c:""}); else update({[k]: k === "rec" ? "all" : ""});
+});
+$("out").addEventListener("click", e => {
+  if (e.target.id === "more") { limit += 300; render(); return; }
+  const b = e.target.closest("[data-a],[data-g],[data-c],[data-by]"); if (!b) return;
+  const d = b.dataset;
+  update(d.a !== undefined ? {a: d.a} : d.g !== undefined ? {g: d.g} : d.c !== undefined ? {c: d.c} : {by: d.by}, true);
+});
+window.addEventListener("hashchange", () => { readHash(); syncControls(); render(); });
+function init(data) {
+  DATA = data; SONGS = data.songs;
+  const known = {}; SONGS.forEach(s => { if (s.c !== "Unknown") known[s.c] = (known[s.c] || 0) + 1; });
+  const top = Object.entries(known).sort((a, b) => b[1] - a[1]).slice(0, 7).map(e => e[0]);
+  SONGS.forEach(s => s.cs = top.indexOf(s.c));
+  // ---------- build controls ----------
+  const count = (key) => { const m = new Map(); SONGS.forEach(s => [].concat(key(s)).forEach(v => v && m.set(v, (m.get(v)||0)+1))); return m; };
+  function fill(sel, map, any) {
+    sel.innerHTML = `<option value="">${any}</option>` + [...map].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]))
+      .map(([v,n]) => `<option value="${esc(v)}">${esc(v)} (${n})</option>`).join("");
+  }
+  fill($("by"), count(s => s.by), "Anyone");
+  fill($("g"), count(s => s.g), "Any genre");
+  $("artists").innerHTML = [...count(s => s.a).keys()].sort((a,b)=>a.localeCompare(b)).map(a => `<option value="${esc(a)}">`).join("");
+  const cats = [...count(s => s.c)].sort((a,b)=> (a[0]==="Unknown")-(b[0]==="Unknown") || b[1]-a[1]);
+  const catSlot = Object.fromEntries(SONGS.map(s => [s.c, slot(s)]));
+  $("cats").innerHTML = `<button class="chip" data-c="" aria-pressed="true">All genres</button>` + cats.map(([c,n]) =>
+    `<button class="chip" data-c="${esc(c)}" aria-pressed="false"><i class="dot ${catSlot[c]}"></i>${esc(c)} <span style="opacity:.6">${n}</span></button>`).join("");
+  const newest = SONGS.reduce((m,s)=> s.at > m ? s.at : m, "");
+  $("lede").textContent = `${SONGS.length.toLocaleString()} songs from ${count(s=>s.by).size} people, newest first. ` +
+    `Search, filter and tap any artist, genre or name to explore. Last post ${fmtDate(newest.slice(0, 10))}.`;
+
+  readHash();
+  if (st.by || st.g || st.a || st.rec !== "all") { $("panel").hidden = false; $("toggle").setAttribute("aria-expanded","true"); }
+  syncControls(); render();
+}
+fetch("data.json", {cache: "no-cache"}).then(r => r.json()).then(init)
+  .catch(() => { $("out").innerHTML = `<div class="empty">Couldn't load the song list. Please refresh.</div>`; });
+</script>
+</body></html>
