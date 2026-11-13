@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Muzak — Suggestions</title>
+<style>
+:root{color-scheme:light;--page:#f9f9f7;--card:#fff;--ink:#0b0b0b;--ink2:#52514e;--muted:#898781;--grid:#e1e0d9;
+ --ring:rgba(11,11,11,.08);--wash:#f2f1ed;--accent:#2a78d6;--spot:#1a9e52;
+ --s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#eda100;--s5:#e87ba4;--s6:#008300;--s7:#6250d6;--so:#b9b8b1}
+@media (prefers-color-scheme:dark){:root{color-scheme:dark;--page:#0d0d0d;--card:#151514;--ink:#f0efec;--ink2:#c3c2b7;
+ --muted:#898781;--grid:#2c2c2a;--ring:rgba(255,255,255,.09);--wash:#222220;--accent:#3987e5;--spot:#2fbf6a;
+ --s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--s5:#d55181;--s6:#008300;--s7:#9085e9;--so:#5d5c57}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+ line-height:1.45;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:0 16px 80px}
+.topnav{display:flex;gap:6px;padding:14px 0 0;font-size:14px}
+.topnav a{padding:7px 14px;border-radius:999px;text-decoration:none;font-weight:600;color:var(--ink2);border:1px solid var(--ring)}
+.topnav a.on{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.hero{padding:34px 0 18px}
+.eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600}
+h1{font-size:clamp(30px,5vw,46px);line-height:1.05;margin:8px 0 10px;letter-spacing:-.02em}
+.lede{color:var(--ink2);margin:0;max-width:620px}
+.bar{position:sticky;top:0;z-index:5;background:var(--page);padding:12px 0 10px;border-bottom:1px solid var(--grid)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.search{flex:1 1 260px;display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--ring);
+ border-radius:12px;padding:0 12px;height:42px}
+.search input{border:0;outline:0;background:transparent;color:var(--ink);font-size:15px;width:100%;height:100%}
+select,.btn{height:42px;border-radius:12px;border:1px solid var(--ring);background:var(--card);color:var(--ink);
+ font-size:14px;padding:0 12px;font-family:inherit}
+select{max-width:100%;cursor:pointer}
+.btn{cursor:pointer;font-weight:600;white-space:nowrap}
+.btn.primary{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.panel{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-top:10px}
+.panel[hidden]{display:none}
+.panel label{min-width:0}
+.panel select,.panel input{width:100%;min-width:0}
+.panel label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);font-weight:600;
+ text-transform:uppercase;letter-spacing:.05em}
+.panel input{height:42px;border-radius:12px;border:1px solid var(--ring);background:var(--card);color:var(--ink);
+ font-size:14px;padding:0 12px;font-family:inherit}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:10px 0 2px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 12px;border-radius:999px;
+ border:1px solid var(--ring);background:var(--card);color:var(--ink2);font-size:13px;font-weight:550;cursor:pointer;
+ font-family:inherit}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.dot{width:9px;height:9px;border-radius:50%;flex:none;display:inline-block}
+.s0{background:var(--s1)}.s1{background:var(--s2)}.s2{background:var(--s3)}.s3{background:var(--s4)}
+.s4{background:var(--s5)}.s5{background:var(--s6)}.s6{background:var(--s7)}.so{background:var(--so)}
+.status{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px;font-size:13.5px;color:var(--muted);flex-wrap:wrap}
+.active{display:flex;gap:6px;flex-wrap:wrap}
+.tag{display:inline-flex;align-items:center;gap:6px;background:var(--wash);border:1px solid var(--ring);border-radius:999px;
+ padding:3px 6px 3px 11px;color:var(--ink);font-size:12.5px}
+.tag button{border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:15px;line-height:1;padding:0 4px}
+.month{position:sticky;top:var(--bar-h,150px);z-index:2;background:var(--page);margin:26px 0 10px;padding:4px 0;
+ font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;display:flex;gap:10px}
+.month span{color:var(--ink2);font-weight:600;letter-spacing:0;text-transform:none}
+.list{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+.song{display:grid;grid-template-columns:72px 1fr auto;gap:14px;background:var(--card);border:1px solid var(--ring);
+ border-radius:16px;padding:12px;align-items:start}
+.art{width:72px;height:72px;border-radius:10px;background:var(--wash);object-fit:cover;display:block}
+.title{font-weight:680;font-size:16px;line-height:1.25;margin:2px 0 2px}
+.e{display:inline-block;font-size:10px;font-weight:700;background:var(--wash);color:var(--muted);border-radius:4px;
+ padding:1px 5px;margin-left:6px;vertical-align:2px}
+.link{background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer;text-align:left}
+.link:hover{text-decoration:underline}
+.artists{color:var(--ink2);font-size:14.5px}
+.meta{color:var(--muted);font-size:13px;margin-top:3px}
+.g{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.gc{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:3px 9px;border-radius:999px;
+ background:var(--wash);border:1px solid var(--ring);color:var(--ink2);cursor:pointer;font-family:inherit}
+.gc.broad{color:var(--ink);font-weight:600}
+.by{display:flex;flex-direction:column;align-items:flex-end;text-align:right;font-size:13px;color:var(--muted);white-space:nowrap}
+.by b{display:block;color:var(--ink);font-size:14px;font-weight:650;margin-bottom:1px}
+.play{display:inline-flex;align-items:center;gap:6px;margin-top:10px;height:30px;padding:0 12px;border-radius:999px;
+ background:var(--spot);color:#fff;text-decoration:none;font-size:12.5px;font-weight:650}
+details{grid-column:2/4;margin-top:-2px}
+summary{cursor:pointer;color:var(--accent);font-size:13px;font-weight:600;list-style:none}
+summary::-webkit-details-marker{display:none}
+.notes{font-size:13.5px;color:var(--ink2);margin-top:8px;display:grid;gap:10px}
+.notes h4{margin:0 0 2px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.notes p{margin:0}
+.src{font-size:11.5px;color:var(--muted)}
+.src a{color:var(--muted)}
+.empty{text-align:center;color:var(--muted);padding:60px 0}
+.more{display:block;margin:20px auto 0}
+footer{margin-top:50px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--grid);padding-top:16px}
+@media (max-width:640px){
+ .row select{flex:1 1 auto;min-width:0}
+ .song{grid-template-columns:60px 1fr;gap:12px}.art{width:60px;height:60px}
+ .by{grid-column:1/3;text-align:left;flex-direction:row;gap:6px;align-items:baseline;white-space:normal;flex-wrap:wrap}
+ .by b{display:inline;margin:0}.play{margin:0 0 0 auto}
+ details{grid-column:1/3}
+ .panel{grid-template-columns:1fr 1fr}
+}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:12px;margin-top:14px}
+.pick{display:grid;grid-template-columns:84px 1fr;gap:14px;background:var(--card);border:1px solid var(--ring);border-radius:18px;padding:14px}
+.pick .art{width:84px;height:84px;border-radius:12px}
+.why{margin:10px 0 0;font-size:14px;color:var(--ink2);line-height:1.45;border-left:3px solid var(--grid);padding-left:10px}
+.badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center}
+.badge{font-size:11.5px;font-weight:650;padding:3px 9px;border-radius:999px;background:var(--wash);border:1px solid var(--ring);color:var(--ink2)}
+.badge.new{color:var(--card);background:var(--ink);border-color:var(--ink)}
+.src{font-size:11.5px;color:var(--muted)}
+.pick .play{margin-top:0;margin-left:auto}
+.seeds{background:var(--card);border:1px solid var(--ring);border-radius:16px;padding:14px 16px;margin-top:14px;font-size:13.5px;color:var(--ink2)}
+.seeds b{color:var(--ink)}
+.seeds .chips2{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.seeds .chips2 span{background:var(--wash);border-radius:999px;padding:3px 10px;font-size:12.5px}
+h2.sec{font-size:22px;margin:44px 0 4px;letter-spacing:-.01em}
+.secsub{color:var(--muted);font-size:13.5px;margin:0 0 12px}
+.picked{display:flex;flex-direction:column;gap:8px}
+.prow{display:grid;grid-template-columns:48px 1fr auto;gap:12px;align-items:center;background:var(--card);border:1px solid var(--ring);border-radius:14px;padding:10px 12px}
+.prow .art{width:48px;height:48px;border-radius:8px}
+.meta2{font-size:12.5px;color:var(--muted)}
+.how{font-size:13px;color:var(--muted);margin-top:28px;border-top:1px solid var(--grid);padding-top:16px}
+@media (max-width:640px){.grid{grid-template-columns:1fr}.pick{grid-template-columns:64px 1fr}.pick .art{width:64px;height:64px}}
+</style></head>
+<body><div class="wrap">
+<nav class="topnav"><a href="index.html">Insights</a><a href="songs.html">All songs</a><a class="on" href="suggestions.html">Suggestions</a></nav>
+<header class="hero">
+  <div class="eyebrow">Muzak · Fresh picks</div>
+  <h1>Suggestions for the group</h1>
+  <p class="lede" id="lede">Loading suggestions…</p>
+</header>
+<div class="chips" id="tabs" role="tablist" aria-label="Genre group"></div>
+<div id="seeds"></div>
+<div class="grid" id="grid"></div>
+<div id="picked"></div>
+<p class="how" id="how"></p>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmtDate = d => d ? new Date(d.slice(0, 10) + "T12:00:00").toLocaleDateString("en-GB", {day: "numeric", month: "short", year: "numeric"}) : "";
+const fmtN = n => n >= 1e6 ? (n / 1e6).toFixed(1).replace(/\.0$/, "") + "M" : n >= 1e3 ? Math.round(n / 1e3) + "K" : String(n);
+const dot = slot => slot >= 0 ? "s" + slot : "so";
+let S, current = "";
+
+function link(p) {
+  return p.id ? `https://open.spotify.com/track/${encodeURIComponent(p.id)}`
+              : `https://open.spotify.com/search/${encodeURIComponent(p.t + " " + p.a[0])}`;
+}
+function card(p) {
+  const meta = [p.al, p.y].filter(Boolean).map(esc).join(" · ");
+  return `<article class="pick">
+    ${p.img ? `<img class="art" src="${esc(p.img)}" alt="" loading="lazy">` : `<div class="art"></div>`}
+    <div>
+      <div class="title">${esc(p.t)}</div>
+      <div class="artists">${esc(p.a.join(", "))}</div>
+      ${meta ? `<div class="meta">${meta}</div>` : ""}
+      ${p.why ? `<p class="why">${esc(p.why)}</p>` : ""}
+      <div class="badges">
+        <span class="badge ${p.kind === "New artist" ? "new" : ""}">${esc(p.kind)}</span>
+        <span class="src">${esc(p.src.join(" + "))}${p.lis ? ` · ${fmtN(p.lis)} listeners` : ""}</span>
+        <a class="play" href="${link(p)}" target="_blank" rel="noopener">▶ Spotify</a>
+      </div>
+    </div></article>`;
+}
+function show(name) {
+  current = name;
+  document.querySelectorAll("#tabs .chip").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.g === name)));
+  const groups = name ? S.groups.filter(g => g.name === name) : S.groups;
+  if (name && groups[0]) {
+    const g = groups[0];
+    $("seeds").innerHTML = `<div class="seeds"><b>Seeded by what the group loves in ${esc(g.name)}</b>
+      ${g.genres.length ? ` · ${g.genres.map(esc).join(", ")}` : ""}
+      <div class="chips2">${g.seeds.map(s => `<span>${esc(s.t)} — ${esc(s.a)}${s.by ? ` <span style="opacity:.6">(${esc(s.by)})</span>` : ""}</span>`).join("")}</div></div>`;
+  } else {
+    $("seeds").innerHTML = "";
+  }
+  const picks = name ? groups[0].picks : S.groups.flatMap(g => g.picks.slice(0, 3));
+  $("grid").innerHTML = picks.length ? picks.map(card).join("") : `<div class="empty">No suggestions here yet.</div>`;
+  try { history.replaceState(null, "", name ? "#g=" + encodeURIComponent(name) : location.pathname); } catch (e) {}
+}
+function init(data) {
+  S = data;
+  const total = S.groups.reduce((a, g) => a + g.picks.length, 0);
+  $("lede").textContent = `${total} niche songs picked to match what the group shares, across ${S.groups.length} genre groups. ` +
+    `They change every week and update when new songs are posted. Week of ${fmtDate(S.generated)}.`;
+  $("tabs").innerHTML = `<button class="chip" data-g="" aria-pressed="true">Top picks</button>` +
+    S.groups.map(g => `<button class="chip" data-g="${esc(g.name)}" aria-pressed="false"><i class="dot ${dot(g.slot)}"></i>${esc(g.name)} <span style="opacity:.6">${g.picks.length}</span></button>`).join("");
+  $("tabs").addEventListener("click", e => { const b = e.target.closest(".chip"); if (b) show(b.dataset.g); });
+  if (S.picked_up && S.picked_up.length) {
+    $("picked").innerHTML = `<h2 class="sec">Picked up from suggestions</h2>
+      <p class="secsub">Suggested here first, then posted in the chat</p><div class="picked">` +
+      S.picked_up.map(p => `<div class="prow">${p.img ? `<img class="art" src="${esc(p.img)}" alt="" loading="lazy">` : `<div class="art"></div>`}
+        <div><div class="title" style="font-size:15px">${esc(p.t)}</div><div class="meta2">${esc(p.a.join(", "))} · suggested ${fmtDate(p.suggested)}</div></div>
+        <div class="by"><b>${esc(p.by)}</b>${fmtDate(p.at)}</div></div>`).join("") + `</div>`;
+  }
+  const src = S.sources || {};
+  $("how").innerHTML = `How these are picked: songs similar to the group's most-loved and most recent posts (from Last.fm and ListenBrainz)` +
+    (src.ai ? `, plus picks from an AI curator (${esc(src.ai.split(" (")[0])})` : "") +
+    `. Popular hits are filtered out to keep it niche, and every song is checked to exist${src.spotify_check ? " on Spotify" : ""}.`;
+  const h = new URLSearchParams(location.hash.slice(1)).get("g") || "";
+  show(S.groups.some(g => g.name === h) ? h : "");
+}
+fetch("suggestions.json", {cache: "no-cache"}).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(init)
+  .catch(() => { $("lede").textContent = "Suggestions are being prepared. They appear here after the first weekly run."; });
+</script>
+</body></html>
