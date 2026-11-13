@@ -23,7 +23,7 @@ concurrency:
 jobs:
   suggest:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
 
@@ -32,7 +32,7 @@ jobs:
           python-version: "3.12"
 
       - name: Restore cached lookups
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: .suggest-cache
           key: suggest-cache-${{ github.run_id }}
@@ -48,6 +48,13 @@ jobs:
         run: |
           pip install --quiet requests
           python suggest.py
+
+      - name: Save cached lookups (even if the run was stopped)
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: .suggest-cache
+          key: suggest-cache-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Publish
         run: |
