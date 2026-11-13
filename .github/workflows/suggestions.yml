@@ -1,0 +1,63 @@
+name: Suggestions
+
+# Rebuilds suggestions.json:
+#  - whenever the phone publishes new playlist data (data.json)
+#  - every Sunday morning (fresh picks each week)
+#  - on demand: Actions tab > Suggestions > Run workflow
+on:
+  push:
+    branches: [main]
+    paths: [data.json, suggest.py]
+  schedule:
+    - cron: "17 6 * * 0"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+
+concurrency:
+  group: suggestions
+  cancel-in-progress: false
+
+jobs:
+  suggest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Restore cached lookups
+        uses: actions/cache@v4
+        with:
+          path: .suggest-cache
+          key: suggest-cache-${{ github.run_id }}
+          restore-keys: suggest-cache-
+
+      - name: Build suggestions
+        env:
+          LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
+          SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
+          SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: |
+          pip install --quiet requests
+          python suggest.py
+
+      - name: Publish
+        run: |
+          git config user.name "muzak-suggestions"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add suggestions.json suggest_history.json
+          if git diff --cached --quiet; then echo "No changes."; exit 0; fi
+          git commit -m "Suggestions for $(date -u +%G-W%V)"
+          for i in 1 2 3; do git pull --rebase --quiet && git push && break; sleep 5; done
+          # ask GitHub Pages to rebuild the site with the new file
+          curl -s -o /dev/null -w "Pages rebuild requested: %{http_code}\n" -X POST \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/pages/builds" || true
