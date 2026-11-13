@@ -35,7 +35,7 @@ CACHE_FILE = Path(os.environ.get("MUZAK_CACHE", ".suggest-cache/cache.json"))
 PICKS_PER_GROUP = 10
 MIN_SONGS_IN_GROUP = 8
 SEEDS_PER_GROUP = 12
-AI_PICKS_ASKED = 12
+AI_PICKS_ASKED = 10
 AI_SLOTS = 4                     # picks per group reserved for the AI curator (if it has good ones)
 MAX_LISTENERS = 1_500_000        # Last.fm listeners above this = too mainstream, dropped
 NICHE_SCALE = 300_000            # listeners at which a pick's score is halved
@@ -43,6 +43,10 @@ WEEKS_BEFORE_REPEAT = 3
 TAG_MAX_POINTS = 0.35            # genre top-tracks: points at the "sweet spot" (rank 50)
 POPULAR_ARTIST = 1_000_000       # Last.fm listeners from which an artist counts as very popular
 POPULAR_BAND_FACTOR = 0.6        # their top-40% most played recordings score x0.6 (not removed)
+RUN_BUDGET_MIN = 30              # after this many minutes, remaining groups use Last.fm only (no timeout)
+AI_TIMEOUT = 120                 # seconds to wait for one AI answer
+MB_FALLBACK_MAX = 40             # max one-by-one MusicBrainz name lookups per run (1/second)
+START = time.time()
 UA = "MuzakSuggestions/1.0 (+https://github.com/%s)" % os.environ.get("GITHUB_REPOSITORY", "muzak")
 LOG = []
 
@@ -239,15 +243,56 @@ def artist_mbid(name):
     return artist_info(name)["mbid"]
 
 
-def recording_title(mbid):
-    def fetch():
-        r = http("GET", f"https://musicbrainz.org/ws/2/recording/{mbid}", params={"fmt": "json"})
+_mb_used = [0]
+
+
+def _name_from_meta(v):
+    """Find a recording's title in a ListenBrainz metadata entry (field names vary)."""
+    if not isinstance(v, dict):
+        return None
+    rec = v.get("recording") if isinstance(v.get("recording"), dict) else {}
+    for cand in (rec.get("name"), rec.get("title"), v.get("recording_name"), v.get("name"), v.get("title")):
+        if isinstance(cand, str) and cand.strip():
+            return cand.strip()
+    return None
+
+
+def recording_titles(mbids):
+    """Titles for many recordings at once (ListenBrainz batch lookup, cached). Any it can't name
+    fall back to MusicBrainz one by one (1/second), capped per run to keep the job fast."""
+    b = CACHE.setdefault("rec_title", {})
+    out = {m: b[m]["v"] for m in mbids if m in b}
+    todo = [m for m in mbids if m not in out]
+    for i in range(0, len(todo), 25):
+        chunk = todo[i:i + 25]
+        r = http("GET", "https://api.listenbrainz.org/1/metadata/recording/",
+                 params={"recording_mbids": ",".join(chunk)}, retries=1)
+        body = {}
+        try:
+            body = r.json() if r is not None and r.ok else {}
+        except ValueError:
+            pass
+        items = body.items() if isinstance(body, dict) else \
+            ((x.get("recording_mbid"), x) for x in body if isinstance(x, dict))
+        for m, v in items:
+            name = _name_from_meta(v)
+            if m in chunk and name:
+                out[m] = name
+                b[m] = {"t": time.time(), "v": name}
+    for m in todo:
+        if m in out or _mb_used[0] >= MB_FALLBACK_MAX:
+            continue
+        _mb_used[0] += 1
+        r = http("GET", f"https://musicbrainz.org/ws/2/recording/{m}", params={"fmt": "json"}, retries=1)
         time.sleep(1.1)                                   # MusicBrainz asks for max 1 request/second
         try:
-            return (r.json() or {}).get("title") if r is not None and r.ok else None
+            name = (r.json() or {}).get("title") if r is not None and r.ok else None
         except ValueError:
-            return None
-    return cached("mb_title", mbid, 3650, fetch)
+            name = None
+        if name:
+            out[m] = name
+            b[m] = {"t": time.time(), "v": name}
+    return out
 
 
 def listenbrainz_similar(seed_artist):
@@ -286,13 +331,14 @@ def listenbrainz_similar(seed_artist):
 
     bands = [("rest", cached("lb_rest", mbid, 30, lambda: fetch(0, 60)) or []),
              ("top", cached("lb_top", mbid, 30, lambda: fetch(60, 100)) or [])]
+    picked = [(band, e) for band, entries in bands for e in entries[:6]]
+    titles = recording_titles(list(dict.fromkeys(e[0] for _, e in picked)))
     out, seen = [], set()
-    for band, entries in bands:
-        for rec, artist, _ in entries[:10]:
+    for band, (rec, artist, _) in picked:
             if rec in seen:
                 continue
             seen.add(rec)
-            title = recording_title(rec)
+            title = titles.get(rec)
             if not title:
                 continue
             weight = 1.0
@@ -346,25 +392,35 @@ def gemini_models():
     return _models["gemini"]
 
 
+_failed = Counter()
+
+
 def ask_gemini(prompt):
-    for model in gemini_models()[:4]:
+    if sum(_failed.values()) >= 3:                     # Gemini keeps failing this run: go straight to Groq
+        return None, None
+    tried = 0
+    for model in gemini_models():
+        if _failed[model] >= 2 or tried >= 2:        # skip models that keep timing out; max 2 per group
+            continue
+        tried += 1
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
         body = {"contents": [{"parts": [{"text": prompt}]}],
                 "generationConfig": {"responseMimeType": "application/json", "temperature": 0.9}}
-        r = http("POST", f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
-                 json=body, headers={"x-goog-api-key": GEMINI_KEY}, retries=2)
+        r = http("POST", url, json=body, headers={"x-goog-api-key": GEMINI_KEY}, retries=0, timeout=AI_TIMEOUT)
         if r is not None and r.status_code == 400 and "responseMimeType" in r.text:
             body.pop("generationConfig")
-            r = http("POST", f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
-                     json=body, headers={"x-goog-api-key": GEMINI_KEY}, retries=2)
+            r = http("POST", url, json=body, headers={"x-goog-api-key": GEMINI_KEY}, retries=0, timeout=AI_TIMEOUT)
         if r is None or not r.ok:
+            _failed[model] += 1
             continue
         try:
             parts = r.json()["candidates"][0]["content"]["parts"]
-            got = _json_from_text("".join(p.get("text", "") for p in parts))
+            got = _json_from_text("".join(p.get("text", "") for p in parts if not p.get("thought")))
         except (KeyError, IndexError, ValueError, TypeError):
             got = None
         if got:
             return got, f"Gemini ({model})"
+        _failed[model] += 1
     return None, None
 
 
@@ -387,7 +443,7 @@ def groq_model():
 def ask_groq(prompt):
     model = groq_model()
     r = http("POST", "https://api.groq.com/openai/v1/chat/completions",
-             headers={"Authorization": f"Bearer {GROQ_KEY}"}, retries=2,
+             headers={"Authorization": f"Bearer {GROQ_KEY}"}, retries=1, timeout=AI_TIMEOUT,
              json={"model": model, "temperature": 0.8, "response_format": {"type": "json_object"},
                    "messages": [{"role": "system", "content": "You are an expert music curator. Reply with JSON only."},
                                 {"role": "user", "content": prompt}]})
@@ -513,6 +569,9 @@ def main():
     out_groups, ai_used = [], None
 
     for gi, group in enumerate(groups):
+        late = (time.time() - START) / 60 > RUN_BUDGET_MIN
+        if late and (gi == 0 or not out_groups[-1].get("quick")):
+            log(f"\n(Over {RUN_BUDGET_MIN} min - remaining groups use Last.fm only this run.)")
         gsongs = [s for s in songs if s.get("c") == group]
         seeds = pick_seeds(gsongs, now)
         top_genres = [g for g, _ in Counter(g for s in gsongs for g in s.get("g", [])).most_common(6)]
@@ -541,12 +600,12 @@ def main():
         for tag in top_genres[:2]:
             for i, (title, artist) in enumerate(lastfm_tag_tracks(tag)[:150]):
                 add(title, artist, tag_rank_points(i + 1), "Last.fm", f"A standout in {tag}")
-        for s in seeds[:3]:
+        for s in ([] if late else seeds[:3]):
             for title, artist, band, weight in listenbrainz_similar(s["a"][0]):
                 add(title, artist, 0.6 * seed_weight(s, now) * weight, "ListenBrainz",
                     f"Listeners of {s['a'][0]} also play {artist}", s["t"])
         group_artists = {a for s in gsongs for a in s["a"]}
-        picks, source = ai_picks(group, seeds, top_genres, group_artists or playlist_artist_names)
+        picks, source = ([], None) if late else ai_picks(group, seeds, top_genres, group_artists or playlist_artist_names)
         if source:
             ai_used = source
         for title, artist, why in picks:
@@ -618,7 +677,9 @@ def main():
             + (f" ({len(keep)} kept from earlier this week)" if keep else ""))
         out_groups.append({"name": group, "slot": named.index(group) if group in named else -1,
                            "seeds": [{"t": s["t"], "a": s["a"][0], "by": s.get("by", "")} for s in seeds[:6]],
-                           "genres": top_genres[:5], "picks": chosen[:PICKS_PER_GROUP]})
+                           "genres": top_genres[:5], "picks": chosen[:PICKS_PER_GROUP], "quick": late})
+        save(CACHE_FILE, CACHE, compact=True)          # keep progress even if the run is stopped
+        log(f"  ({(time.time() - START) / 60:.1f} min elapsed)")
 
     # history + picked up
     for g in out_groups:
