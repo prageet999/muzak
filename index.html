@@ -199,6 +199,24 @@ Genres come from Spotify artist data, with Last.fm tags where Spotify had none.<
 </div>
 
 <script>
+// Genre groups: same rules as the Python side (genre_groups.json). Whole-word keywords, groups in
+// order, exact "overrides" win; a song takes the group most of its genres point to.
+const _w = t => " " + (t || "").normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase()
+  .replace(/[^a-z0-9&]+/g, " ").trim().split(/\s+/).filter(Boolean).join(" ") + " ";
+function makeGrouper(rules) {
+  if (!rules || !Array.isArray(rules.groups)) return null;
+  const order = rules.groups.map(g => g.name).filter(Boolean);
+  const kws = rules.groups.filter(g => g.name).map(g => [g.name, (g.keywords || []).filter(k => String(k).trim()).map(_w)]);
+  const over = {}; Object.entries(rules.overrides || {}).forEach(([k, v]) => { if (v) over[_w(k).trim()] = v; });
+  const rank = Object.fromEntries(order.map((c, i) => [c, i]));
+  const genre = g => { const w = _w(g); if (over[w.trim()]) return over[w.trim()];
+    for (const [n, ks] of kws) if (ks.some(k => w.includes(k))) return n; return null; };
+  const song = genres => { const n = {}; (genres || []).map(genre).filter(Boolean).forEach(c => n[c] = (n[c] || 0) + 1);
+    const cs = Object.keys(n); return cs.length ? cs.sort((a, b) => n[b] - n[a] || (rank[a] ?? 1e9) - (rank[b] ?? 1e9))[0] : "Unknown"; };
+  return {genre, song, order, over, rank};
+}
+function regroup(songs, rules) { const G = makeGrouper(rules); if (G) songs.forEach(s => s.c = G.song(s.g)); }
+const loadRules = () => fetch("genre_groups.json", {cache: "no-cache"}).then(r => r.ok ? r.json() : null).catch(() => null);
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fmtInt = n => Math.round(n).toLocaleString("en-GB");
@@ -381,8 +399,8 @@ function render(D) {
       scales: {x: sy({ticks: {color: MUTED, callback: v => v + " yrs"}}), y: sx({ticks: {color: INK2, font: {weight: 600}}})}}});
 }
 
-fetch("data.json", {cache: "no-cache"}).then(r => r.json())
+Promise.all([fetch("data.json", {cache: "no-cache"}).then(r => r.json()), loadRules()])
   .catch(e => { $("lede").textContent = "Couldn't load the data. Please refresh the page."; throw e; })
-  .then(render);
+  .then(([data, rules]) => { regroup(data.songs, rules); render(data); });
 </script>
 </body></html>

@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Muzak — Genre groups</title>
+<style>
+:root{color-scheme:light;--page:#f9f9f7;--card:#fff;--ink:#0b0b0b;--ink2:#52514e;--muted:#898781;--grid:#e1e0d9;
+ --ring:rgba(11,11,11,.08);--wash:#f2f1ed;--accent:#2a78d6;--spot:#1a9e52;
+ --s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#eda100;--s5:#e87ba4;--s6:#008300;--s7:#6250d6;--so:#b9b8b1}
+@media (prefers-color-scheme:dark){:root{color-scheme:dark;--page:#0d0d0d;--card:#151514;--ink:#f0efec;--ink2:#c3c2b7;
+ --muted:#898781;--grid:#2c2c2a;--ring:rgba(255,255,255,.09);--wash:#222220;--accent:#3987e5;--spot:#2fbf6a;
+ --s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--s5:#d55181;--s6:#008300;--s7:#9085e9;--so:#5d5c57}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+ line-height:1.45;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:0 16px 80px}
+.topnav{display:flex;gap:6px;padding:14px 0 0;font-size:14px}
+.topnav a{padding:7px 14px;border-radius:999px;text-decoration:none;font-weight:600;color:var(--ink2);border:1px solid var(--ring)}
+.topnav a.on{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.hero{padding:34px 0 18px}
+.eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600}
+h1{font-size:clamp(30px,5vw,46px);line-height:1.05;margin:8px 0 10px;letter-spacing:-.02em}
+.lede{color:var(--ink2);margin:0;max-width:620px}
+.bar{position:sticky;top:0;z-index:5;background:var(--page);padding:12px 0 10px;border-bottom:1px solid var(--grid)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.search{flex:1 1 260px;display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--ring);
+ border-radius:12px;padding:0 12px;height:42px}
+.search input{border:0;outline:0;background:transparent;color:var(--ink);font-size:15px;width:100%;height:100%}
+select,.btn{height:42px;border-radius:12px;border:1px solid var(--ring);background:var(--card);color:var(--ink);
+ font-size:14px;padding:0 12px;font-family:inherit}
+select{max-width:100%;cursor:pointer}
+.btn{cursor:pointer;font-weight:600;white-space:nowrap}
+.btn.primary{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.panel{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-top:10px}
+.panel[hidden]{display:none}
+.panel label{min-width:0}
+.panel select,.panel input{width:100%;min-width:0}
+.panel label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);font-weight:600;
+ text-transform:uppercase;letter-spacing:.05em}
+.panel input{height:42px;border-radius:12px;border:1px solid var(--ring);background:var(--card);color:var(--ink);
+ font-size:14px;padding:0 12px;font-family:inherit}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:10px 0 2px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 12px;border-radius:999px;
+ border:1px solid var(--ring);background:var(--card);color:var(--ink2);font-size:13px;font-weight:550;cursor:pointer;
+ font-family:inherit}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.dot{width:9px;height:9px;border-radius:50%;flex:none;display:inline-block}
+.s0{background:var(--s1)}.s1{background:var(--s2)}.s2{background:var(--s3)}.s3{background:var(--s4)}
+.s4{background:var(--s5)}.s5{background:var(--s6)}.s6{background:var(--s7)}.so{background:var(--so)}
+.status{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px;font-size:13.5px;color:var(--muted);flex-wrap:wrap}
+.active{display:flex;gap:6px;flex-wrap:wrap}
+.tag{display:inline-flex;align-items:center;gap:6px;background:var(--wash);border:1px solid var(--ring);border-radius:999px;
+ padding:3px 6px 3px 11px;color:var(--ink);font-size:12.5px}
+.tag button{border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:15px;line-height:1;padding:0 4px}
+.month{position:sticky;top:var(--bar-h,150px);z-index:2;background:var(--page);margin:26px 0 10px;padding:4px 0;
+ font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;display:flex;gap:10px}
+.month span{color:var(--ink2);font-weight:600;letter-spacing:0;text-transform:none}
+.list{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+.song{display:grid;grid-template-columns:72px 1fr auto;gap:14px;background:var(--card);border:1px solid var(--ring);
+ border-radius:16px;padding:12px;align-items:start}
+.art{width:72px;height:72px;border-radius:10px;background:var(--wash);object-fit:cover;display:block}
+.title{font-weight:680;font-size:16px;line-height:1.25;margin:2px 0 2px}
+.e{display:inline-block;font-size:10px;font-weight:700;background:var(--wash);color:var(--muted);border-radius:4px;
+ padding:1px 5px;margin-left:6px;vertical-align:2px}
+.link{background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer;text-align:left}
+.link:hover{text-decoration:underline}
+.artists{color:var(--ink2);font-size:14.5px}
+.meta{color:var(--muted);font-size:13px;margin-top:3px}
+.g{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.gc{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:3px 9px;border-radius:999px;
+ background:var(--wash);border:1px solid var(--ring);color:var(--ink2);cursor:pointer;font-family:inherit}
+.gc.broad{color:var(--ink);font-weight:600}
+.by{display:flex;flex-direction:column;align-items:flex-end;text-align:right;font-size:13px;color:var(--muted);white-space:nowrap}
+.by b{display:block;color:var(--ink);font-size:14px;font-weight:650;margin-bottom:1px}
+.play{display:inline-flex;align-items:center;gap:6px;margin-top:10px;height:30px;padding:0 12px;border-radius:999px;
+ background:var(--spot);color:#fff;text-decoration:none;font-size:12.5px;font-weight:650}
+details{grid-column:2/4;margin-top:-2px}
+summary{cursor:pointer;color:var(--accent);font-size:13px;font-weight:600;list-style:none}
+summary::-webkit-details-marker{display:none}
+.notes{font-size:13.5px;color:var(--ink2);margin-top:8px;display:grid;gap:10px}
+.notes h4{margin:0 0 2px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.notes p{margin:0}
+.src{font-size:11.5px;color:var(--muted)}
+.src a{color:var(--muted)}
+.empty{text-align:center;color:var(--muted);padding:60px 0}
+.more{display:block;margin:20px auto 0}
+footer{margin-top:50px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--grid);padding-top:16px}
+@media (max-width:640px){
+ .row select{flex:1 1 auto;min-width:0}
+ .song{grid-template-columns:60px 1fr;gap:12px}.art{width:60px;height:60px}
+ .by{grid-column:1/3;text-align:left;flex-direction:row;gap:6px;align-items:baseline;white-space:normal;flex-wrap:wrap}
+ .by b{display:inline;margin:0}.play{margin:0 0 0 auto}
+ details{grid-column:1/3}
+ .panel{grid-template-columns:1fr 1fr}
+}
+.bar2{position:sticky;top:0;z-index:5;background:var(--page);padding:12px 0;border-bottom:1px solid var(--grid);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.bar2 .grow{flex:1;font-size:13.5px;color:var(--muted)}
+.bar2 .grow b{color:var(--ink)}
+h2.sec{font-size:20px;margin:30px 0 4px;letter-spacing:-.01em}
+.secsub{color:var(--muted);font-size:13.5px;margin:0 0 12px}
+.groups{display:flex;flex-direction:column;gap:6px}
+.grow2{display:grid;grid-template-columns:auto 1fr auto auto;gap:10px;align-items:center;background:var(--card);border:1px solid var(--ring);border-radius:12px;padding:8px 10px}
+.grow2 input{border:1px solid transparent;background:transparent;color:var(--ink);font:inherit;font-weight:650;padding:6px 8px;border-radius:8px;min-width:0;width:100%}
+.grow2 input:focus{border-color:var(--ring);background:var(--wash);outline:0}
+.cnt{font-size:13px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.cnt b{color:var(--ink)}
+.icons{display:flex;gap:2px}
+.ib{border:0;background:transparent;color:var(--muted);font-size:16px;width:32px;height:32px;border-radius:8px;cursor:pointer}
+.ib:hover{background:var(--wash);color:var(--ink)}
+.ib:disabled{opacity:.3;cursor:default}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.toolbar .search{flex:1 1 220px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:0 8px 8px;border-bottom:1px solid var(--grid)}
+td{padding:8px;border-bottom:1px solid var(--grid);vertical-align:middle}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;width:60px}
+td select{height:36px;border-radius:10px;font-size:13.5px;width:100%;max-width:260px}
+tr.changed td{background:var(--wash)}
+.why2{font-size:12px;color:var(--muted);margin-top:2px}
+.pill2{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;background:var(--ink);color:var(--card);margin-left:6px;vertical-align:1px}
+.card2{background:var(--card);border:1px solid var(--ring);border-radius:16px;padding:14px}
+details.kw{margin-top:8px}
+details.kw summary{color:var(--accent);font-weight:600;font-size:14px;cursor:pointer;list-style:none}
+.kwrow{margin-top:12px}
+.kwrow label{display:block;font-size:12.5px;font-weight:650;color:var(--ink2);margin-bottom:4px}
+.kwrow textarea{width:100%;min-height:58px;border-radius:10px;border:1px solid var(--ring);background:var(--card);color:var(--ink);font:13px/1.4 ui-monospace,Menlo,Consolas,monospace;padding:8px;resize:vertical}
+.dialog{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;z-index:20;padding:16px}
+.dialog[hidden]{display:none}
+.sheet{background:var(--card);color:var(--ink);border-radius:20px;max-width:560px;width:100%;padding:20px;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+.sheet h3{margin:0 0 6px;font-size:19px}
+.sheet ol{padding-left:20px;margin:12px 0;color:var(--ink2);font-size:14.5px;line-height:1.55}
+.sheet .row{margin-top:10px}
+.note2{font-size:12.5px;color:var(--muted)}
+.ok{color:var(--spot);font-weight:650}
+@media (max-width:640px){.grow2{grid-template-columns:auto 1fr auto}.grow2 .icons{grid-column:1/4;justify-content:flex-end}td select{max-width:170px}}
+</style></head>
+<body><div class="wrap">
+<nav class="topnav"><a href="index.html">Insights</a><a href="songs.html">All songs</a><a href="suggestions.html">Suggestions</a></nav>
+<header class="hero">
+  <div class="eyebrow">Muzak · Admin</div>
+  <h1>Genre groups</h1>
+  <p class="lede">Choose which broad group each detailed genre belongs to. Everything previews live here.
+  Only the site owner can save changes for everyone; saving updates the Insights, All songs and Suggestions pages.</p>
+</header>
+
+<div class="bar2">
+  <div class="grow" id="status">Loading…</div>
+  <button class="btn" id="undo" hidden>Undo all</button>
+  <button class="btn primary" id="save" disabled>Save to GitHub</button>
+</div>
+
+<h2 class="sec">Groups</h2>
+<p class="secsub">Rename, reorder (when a genre matches keywords of two groups, the higher one wins), add or remove groups.</p>
+<div class="groups" id="groups"></div>
+<div style="margin-top:8px"><button class="btn" id="add">+ Add group</button></div>
+
+<h2 class="sec">Detailed genres</h2>
+<p class="secsub">Pick a group to pin a genre to it, or "Automatic" to let the keywords decide.</p>
+<div class="toolbar">
+  <div class="search"><span aria-hidden="true">⌕</span><input id="q" type="search" placeholder="Search genres…" autocomplete="off"></div>
+  <select id="filter" aria-label="Show">
+    <option value="">All genres</option><option value="__none">Not in any group</option><option value="__pinned">Pinned by you</option>
+  </select>
+  <select id="sortg" aria-label="Sort"><option value="n">Most songs</option><option value="az">A–Z</option></select>
+</div>
+<div class="card2" style="padding:6px 8px"><table>
+  <thead><tr><th>Genre</th><th class="num">Songs</th><th>Group</th></tr></thead>
+  <tbody id="rows"></tbody></table></div>
+<div style="margin-top:10px"><button class="btn" id="more" hidden>Show more</button></div>
+
+<details class="kw card2" style="margin-top:28px"><summary>Keywords (advanced)</summary>
+  <p class="note2">A genre joins the first group (top to bottom) that has one of its words as a whole word.
+  Separate keywords with commas, e.g. <code>house, amapiano</code>.</p>
+  <div id="kws"></div>
+</details>
+
+<footer>Rules live in <code>genre_groups.json</code> in the site's GitHub repository.</footer>
+</div>
+
+<div class="dialog" id="dlg" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="dlgT">
+  <h3 id="dlgT">Save to GitHub</h3>
+  <p class="note2">GitHub only lets the repository owner (and people they add) save. Takes about 30 seconds:</p>
+  <ol>
+    <li>Tap <b>Copy rules</b>.</li>
+    <li>Tap <b>Open GitHub editor</b> and sign in if asked.</li>
+    <li>In the editor, select all the text (long-press → Select all), then paste.</li>
+    <li>Tap <b>Commit changes…</b> → <b>Commit changes</b>.</li>
+  </ol>
+  <p class="note2">The site updates in about a minute; new suggestions follow automatically.</p>
+  <div class="row" style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn primary" id="copy">Copy rules</button>
+    <a class="btn" id="gh" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;text-decoration:none">Open GitHub editor ↗</a>
+    <button class="btn" id="dl">Download file</button>
+  </div>
+  <p class="note2" id="copied" style="min-height:18px"></p>
+  <div class="row" style="text-align:right"><button class="btn" id="close">Done</button></div>
+</div></div>
+
+<script>
+// Genre groups: same rules as the Python side (genre_groups.json). Whole-word keywords, groups in
+// order, exact "overrides" win; a song takes the group most of its genres point to.
+const _w = t => " " + (t || "").normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase()
+  .replace(/[^a-z0-9&]+/g, " ").trim().split(/\s+/).filter(Boolean).join(" ") + " ";
+function makeGrouper(rules) {
+  if (!rules || !Array.isArray(rules.groups)) return null;
+  const order = rules.groups.map(g => g.name).filter(Boolean);
+  const kws = rules.groups.filter(g => g.name).map(g => [g.name, (g.keywords || []).filter(k => String(k).trim()).map(_w)]);
+  const over = {}; Object.entries(rules.overrides || {}).forEach(([k, v]) => { if (v) over[_w(k).trim()] = v; });
+  const rank = Object.fromEntries(order.map((c, i) => [c, i]));
+  const genre = g => { const w = _w(g); if (over[w.trim()]) return over[w.trim()];
+    for (const [n, ks] of kws) if (ks.some(k => w.includes(k))) return n; return null; };
+  const song = genres => { const n = {}; (genres || []).map(genre).filter(Boolean).forEach(c => n[c] = (n[c] || 0) + 1);
+    const cs = Object.keys(n); return cs.length ? cs.sort((a, b) => n[b] - n[a] || (rank[a] ?? 1e9) - (rank[b] ?? 1e9))[0] : "Unknown"; };
+  return {genre, song, order, over, rank};
+}
+function regroup(songs, rules) { const G = makeGrouper(rules); if (G) songs.forEach(s => s.c = G.song(s.g)); }
+const loadRules = () => fetch("genre_groups.json", {cache: "no-cache"}).then(r => r.ok ? r.json() : null).catch(() => null);
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const clone = o => JSON.parse(JSON.stringify(o));
+const DRAFT = "muzak-genre-draft";
+let SONGS = [], GENRES = [], ORIGINAL = null, R = null, limit = 80;
+
+function store(v) { try { v ? localStorage.setItem(DRAFT, JSON.stringify(v)) : localStorage.removeItem(DRAFT); } catch (e) {} }
+function draft() { try { return JSON.parse(localStorage.getItem(DRAFT) || "null"); } catch (e) { return null; } }
+const dirty = () => JSON.stringify(R) !== JSON.stringify(ORIGINAL);
+
+function changed() { store(dirty() ? R : null); render(); }
+
+function render() {
+  const G = makeGrouper(R);
+  const songCat = SONGS.map(s => G.song(s.g));
+  const perGroup = {}; songCat.forEach(c => perGroup[c] = (perGroup[c] || 0) + 1);
+  const genreGroup = Object.fromEntries(GENRES.map(([g]) => [g, G.genre(g)]));
+  const perGroupGenres = {}; Object.values(genreGroup).forEach(c => { if (c) perGroupGenres[c] = (perGroupGenres[c] || 0) + 1; });
+  const ranked = Object.entries(perGroup).filter(([c]) => c !== "Unknown").sort((a, b) => b[1] - a[1]).slice(0, 7).map(e => e[0]);
+  const dot = c => { const i = ranked.indexOf(c); return i >= 0 ? "s" + i : "so"; };
+
+  // status
+  const nChanges = dirty() ? countChanges() : 0;
+  $("status").innerHTML = `<b>${SONGS.length.toLocaleString()}</b> songs · <b>${R.groups.length}</b> groups · ` +
+    `<b>${(perGroup.Unknown || 0).toLocaleString()}</b> without a group` + (nChanges ? ` · <span class="ok">${nChanges} unsaved change${nChanges > 1 ? "s" : ""}</span>` : "");
+  $("save").disabled = !nChanges; $("undo").hidden = !nChanges;
+
+  // groups
+  $("groups").innerHTML = R.groups.map((g, i) => `<div class="grow2">
+      <i class="dot ${dot(g.name)}"></i>
+      <input value="${esc(g.name)}" data-rename="${i}" aria-label="Group name">
+      <span class="cnt"><b>${(perGroup[g.name] || 0).toLocaleString()}</b> songs · ${perGroupGenres[g.name] || 0} genres</span>
+      <span class="icons"><button class="ib" data-up="${i}" ${i ? "" : "disabled"} aria-label="Move up">↑</button>
+      <button class="ib" data-down="${i}" ${i < R.groups.length - 1 ? "" : "disabled"} aria-label="Move down">↓</button>
+      <button class="ib" data-del="${i}" aria-label="Remove group">✕</button></span></div>`).join("");
+
+  // genres table
+  const q = $("q").value.trim().toLowerCase(), f = $("filter").value;
+  const pinned = R.overrides || {};
+  let list = GENRES.filter(([g]) => !q || g.toLowerCase().includes(q));
+  if (f === "__none") list = list.filter(([g]) => !genreGroup[g]);
+  else if (f === "__pinned") list = list.filter(([g]) => pinned[g]);
+  else if (f) list = list.filter(([g]) => genreGroup[g] === f);
+  if ($("sortg").value === "az") list = [...list].sort((a, b) => a[0].localeCompare(b[0]));
+  const origG = makeGrouper(ORIGINAL);
+  const auto = makeGrouper(Object.assign({}, R, {overrides: {}}));
+  $("rows").innerHTML = list.slice(0, limit).map(([g, n]) => {
+    const cur = genreGroup[g], isPinned = !!pinned[g], a = auto.genre(g);
+    const opts = `<option value="">Automatic${a ? ` (${esc(a)})` : " (none)"}</option>` +
+      R.groups.map(x => `<option value="${esc(x.name)}" ${isPinned && pinned[g] === x.name ? "selected" : ""}>${esc(x.name)}</option>`).join("");
+    const was = origG.genre(g);
+    return `<tr class="${was !== cur ? "changed" : ""}"><td>${esc(g)}${isPinned ? `<span class="pill2">pinned</span>` : ""}
+      <div class="why2">${cur ? `<i class="dot ${dot(cur)}"></i> ${esc(cur)}` : "No group"}${was !== cur ? ` · was ${esc(was || "no group")}` : ""}</div></td>
+      <td class="num">${n}</td><td><select data-genre="${esc(g)}">${opts}</select></td></tr>`;
+  }).join("") || `<tr><td colspan="3" class="note2">No genres match.</td></tr>`;
+  $("more").hidden = list.length <= limit;
+  $("more").textContent = `Show more (${list.length - limit} left)`;
+
+  // filter options follow the groups
+  const fv = $("filter").value;
+  $("filter").innerHTML = `<option value="">All genres</option><option value="__none">Not in any group</option><option value="__pinned">Pinned by you</option>` +
+    R.groups.map(x => `<option value="${esc(x.name)}">In: ${esc(x.name)}</option>`).join("");
+  $("filter").value = [...$("filter").options].some(o => o.value === fv) ? fv : "";
+
+  // keywords
+  if (!document.activeElement || !document.activeElement.dataset.kw) {
+    $("kws").innerHTML = R.groups.map((g, i) => `<div class="kwrow"><label>${esc(g.name)}</label>
+      <textarea data-kw="${i}">${esc((g.keywords || []).join(", "))}</textarea></div>`).join("");
+  }
+}
+
+function countChanges() {
+  let n = 0; const a = ORIGINAL, b = R;
+  const ov = new Set([...Object.keys(a.overrides || {}), ...Object.keys(b.overrides || {})]);
+  ov.forEach(k => { if ((a.overrides || {})[k] !== (b.overrides || {})[k]) n++; });
+  if (JSON.stringify(a.groups) !== JSON.stringify(b.groups)) {
+    const len = Math.max(a.groups.length, b.groups.length);
+    for (let i = 0; i < len; i++) if (JSON.stringify(a.groups[i]) !== JSON.stringify(b.groups[i])) n++;
+  }
+  return n;
+}
+
+// ---------- edits ----------
+document.addEventListener("change", e => {
+  const t = e.target;
+  if (t.dataset.genre !== undefined) {
+    R.overrides = R.overrides || {};
+    if (t.value) R.overrides[t.dataset.genre] = t.value; else delete R.overrides[t.dataset.genre];
+    changed();
+  } else if (t.dataset.rename !== undefined) {
+    const i = +t.dataset.rename, old = R.groups[i].name, name = t.value.trim();
+    if (!name || R.groups.some((g, j) => j !== i && g.name === name)) { t.value = old; return; }
+    R.groups[i].name = name;
+    Object.keys(R.overrides || {}).forEach(k => { if (R.overrides[k] === old) R.overrides[k] = name; });
+    changed();
+  } else if (t.dataset.kw !== undefined) {
+    R.groups[+t.dataset.kw].keywords = t.value.split(",").map(s => s.trim()).filter(Boolean);
+    t.blur(); changed();
+  } else if (t.id === "filter" || t.id === "sortg") { limit = 80; render(); }
+});
+$("q").addEventListener("input", () => { limit = 80; render(); });
+$("groups").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  const d = b.dataset, g = R.groups;
+  if (d.up) { const i = +d.up; [g[i - 1], g[i]] = [g[i], g[i - 1]]; }
+  else if (d.down) { const i = +d.down; [g[i + 1], g[i]] = [g[i], g[i + 1]]; }
+  else if (d.del) {
+    const i = +d.del, name = g[i].name;
+    if (!confirmRemove(name)) return;
+    g.splice(i, 1);
+    Object.keys(R.overrides || {}).forEach(k => { if (R.overrides[k] === name) delete R.overrides[k]; });
+  } else return;
+  changed();
+});
+let pendingDelete = null;
+function confirmRemove(name) {           // no browser pop-ups: tap ✕ twice to remove
+  if (pendingDelete === name) { pendingDelete = null; return true; }
+  pendingDelete = name; $("status").innerHTML = `Tap ✕ again to remove <b>${esc(name)}</b> (its genres become automatic).`;
+  setTimeout(() => { if (pendingDelete === name) { pendingDelete = null; render(); } }, 4000);
+  return false;
+}
+$("add").addEventListener("click", () => {
+  let n = 1; while (R.groups.some(g => g.name === `New group ${n}`)) n++;
+  R.groups.push({name: `New group ${n}`, keywords: []}); changed();
+  const inputs = document.querySelectorAll("[data-rename]"); const last = inputs[inputs.length - 1]; last && last.focus(); last && last.select();
+});
+$("more").addEventListener("click", () => { limit += 200; render(); });
+$("undo").addEventListener("click", () => { R = clone(ORIGINAL); store(null); render(); });
+
+// ---------- save ----------
+const json = () => JSON.stringify(R, null, 1) + "\n";
+function repoInfo() {
+  const owner = location.hostname.endsWith(".github.io") ? location.hostname.split(".")[0] : "";
+  const repo = location.pathname.split("/").filter(Boolean)[0] || "";
+  return {owner, repo: repo.endsWith(".html") ? "" : repo};
+}
+$("save").addEventListener("click", () => {
+  const {owner, repo} = repoInfo();
+  $("gh").href = owner && repo ? `https://github.com/${owner}/${repo}/edit/main/genre_groups.json` : "https://github.com";
+  $("copied").textContent = ""; $("dlg").hidden = false;
+});
+$("close").addEventListener("click", () => { $("dlg").hidden = true; });
+$("copy").addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText(json()); $("copied").innerHTML = `<span class="ok">Copied.</span> Now open the GitHub editor.`; }
+  catch (e) { $("copied").textContent = "Couldn't copy automatically - use Download file instead."; }
+});
+$("dl").addEventListener("click", () => {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([json()], {type: "application/json"})); a.download = "genre_groups.json"; a.click();
+});
+
+// ---------- load ----------
+Promise.all([fetch("data.json", {cache: "no-cache"}).then(r => r.json()), loadRules()]).then(([data, rules]) => {
+  if (!rules) { $("status").textContent = "No genre_groups.json yet - run muzak once from the phone, then reload."; return; }
+  SONGS = data.songs;
+  const n = {}; SONGS.forEach(s => (s.g || []).forEach(g => n[g] = (n[g] || 0) + 1));
+  GENRES = Object.entries(n).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  ORIGINAL = clone(rules); ORIGINAL.overrides = ORIGINAL.overrides || {};
+  const d = draft();
+  R = d && Array.isArray(d.groups) ? d : clone(ORIGINAL);
+  render();
+}).catch(() => { $("status").textContent = "Couldn't load the data. Please refresh."; });
+</script>
+</body></html>

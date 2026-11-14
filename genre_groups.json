@@ -1,0 +1,233 @@
+{
+ "version": 1,
+ "groups": [
+  {
+   "name": "Indian / South Asian",
+   "keywords": [
+    "indian",
+    "desi",
+    "bollywood",
+    "hindustani",
+    "carnatic",
+    "filmi",
+    "punjabi",
+    "bhangra",
+    "sufi",
+    "qawwali",
+    "tamil",
+    "telugu",
+    "kannada",
+    "malayalam",
+    "bengali",
+    "marathi",
+    "pakistani",
+    "asian underground",
+    "raga",
+    "ghazal",
+    "hindi",
+    "urdu",
+    "gujarati",
+    "nepali",
+    "sinhala"
+   ]
+  },
+  {
+   "name": "Metal",
+   "keywords": [
+    "metal",
+    "djent",
+    "metalcore",
+    "deathcore",
+    "grindcore",
+    "doom",
+    "sludge",
+    "thrash"
+   ]
+  },
+  {
+   "name": "Rock / Alternative",
+   "keywords": [
+    "rock",
+    "grunge",
+    "punk",
+    "post-punk",
+    "emo",
+    "shoegaze",
+    "post-hardcore",
+    "britpop",
+    "new wave",
+    "indie",
+    "alternative",
+    "prog",
+    "garage rock",
+    "psychedelic rock",
+    "neo-psychedelia"
+   ]
+  },
+  {
+   "name": "Hip-Hop / Rap",
+   "keywords": [
+    "hip hop",
+    "rap",
+    "trap",
+    "drill",
+    "grime",
+    "boom bap"
+   ]
+  },
+  {
+   "name": "Jazz",
+   "keywords": [
+    "jazz",
+    "bebop",
+    "swing",
+    "bossa nova",
+    "nu jazz",
+    "acid jazz",
+    "jazztronica"
+   ]
+  },
+  {
+   "name": "Funk / Soul / R&B",
+   "keywords": [
+    "funk",
+    "soul",
+    "r&b",
+    "rnb",
+    "disco",
+    "motown",
+    "gospel",
+    "boogie"
+   ]
+  },
+  {
+   "name": "House",
+   "keywords": [
+    "house",
+    "amapiano"
+   ]
+  },
+  {
+   "name": "Techno",
+   "keywords": [
+    "techno",
+    "minimal",
+    "tech house"
+   ]
+  },
+  {
+   "name": "Trance / Psy",
+   "keywords": [
+    "trance",
+    "psytrance",
+    "psybient",
+    "goa",
+    "progressive psy",
+    "psychill"
+   ]
+  },
+  {
+   "name": "Downtempo / Chill / Ambient",
+   "keywords": [
+    "downtempo",
+    "chill",
+    "chillout",
+    "chillwave",
+    "chillhop",
+    "ambient",
+    "trip hop",
+    "lo-fi",
+    "lofi",
+    "organic",
+    "new age",
+    "dub"
+   ]
+  },
+  {
+   "name": "Electronic (other)",
+   "keywords": [
+    "electronic",
+    "electronica",
+    "indietronica",
+    "edm",
+    "idm",
+    "dubstep",
+    "drum and bass",
+    "dnb",
+    "breakbeat",
+    "breaks",
+    "uk garage",
+    "bass",
+    "synth",
+    "synthwave",
+    "electro",
+    "dance",
+    "big beat",
+    "melodic",
+    "afro"
+   ]
+  },
+  {
+   "name": "Pop",
+   "keywords": [
+    "pop",
+    "k-pop",
+    "j-pop",
+    "synthpop"
+   ]
+  },
+  {
+   "name": "Classical / Soundtrack",
+   "keywords": [
+    "classical",
+    "orchestra",
+    "piano",
+    "soundtrack",
+    "score",
+    "neoclassical",
+    "compositional",
+    "opera",
+    "minimalism",
+    "video game"
+   ]
+  },
+  {
+   "name": "Folk / World / Latin",
+   "keywords": [
+    "folk",
+    "world",
+    "latin",
+    "reggae",
+    "dancehall",
+    "reggaeton",
+    "afrobeat",
+    "afrobeats",
+    "flamenco",
+    "celtic",
+    "balkan",
+    "cumbia",
+    "salsa",
+    "samba",
+    "brazil",
+    "arab",
+    "turkish",
+    "african",
+    "mpb",
+    "singer-songwriter",
+    "country",
+    "blues",
+    "folktronica"
+   ]
+  }
+ ],
+ "overrides": {
+  "progressive house": "House",
+  "psychedelic trance": "Trance / Psy",
+  "progressive trance": "Trance / Psy",
+  "indie dance": "Electronic (other)",
+  "indie electronic": "Electronic (other)",
+  "uk garage": "Electronic (other)",
+  "speed garage": "Electronic (other)",
+  "garage house": "House"
+ }
+}

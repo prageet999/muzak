@@ -125,6 +125,34 @@ def http(method, url, retries=3, **kw):
 
 
 # ---------------------------------------------------------------------------
+# genre groups - same logic as muzak_site.Grouper, reading genre_groups.json from the repo
+# ---------------------------------------------------------------------------
+def _words(text):
+    t = unicodedata.normalize("NFKD", text or "").encode("ascii", "ignore").decode().lower()
+    return " " + " ".join(re.sub(r"[^a-z0-9&]+", " ", t).split()) + " "
+
+
+def regroup(songs, rules):
+    """Re-assign each song's broad group with the current rules (so edits apply immediately)."""
+    if not (isinstance(rules, dict) and rules.get("groups")):
+        return
+    order = [g["name"] for g in rules["groups"] if g.get("name")]
+    kws = [(g["name"], [_words(k) for k in g.get("keywords", []) if k.strip()]) for g in rules["groups"] if g.get("name")]
+    over = {_words(k).strip(): v for k, v in (rules.get("overrides") or {}).items() if v}
+    rank = {c: i for i, c in enumerate(order)}
+
+    def genre(g):
+        w = _words(g)
+        if w.strip() in over:
+            return over[w.strip()]
+        return next((name for name, ks in kws if any(k in w for k in ks)), None)
+    for s in songs:
+        cats = [c for c in (genre(g) for g in s.get("g", [])) if c]
+        n = Counter(cats)
+        s["c"] = max(n, key=lambda c: (n[c], -rank.get(c, len(rank)))) if cats else "Unknown"
+
+
+# ---------------------------------------------------------------------------
 # seeds
 # ---------------------------------------------------------------------------
 def build_groups(data):
@@ -546,6 +574,7 @@ def main():
     if not data:
         sys.exit("data.json not found - publish the site from the phone first.")
     CACHE = load(CACHE_FILE, {})
+    regroup(data.get("songs", []), load(ROOT / "genre_groups.json", None))
     prev = load(ROOT / "suggestions.json", {})
     history = load(ROOT / "suggest_history.json", {})
     now = datetime.now(timezone.utc).replace(tzinfo=None)
